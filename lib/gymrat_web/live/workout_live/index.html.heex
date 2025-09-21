@@ -1,0 +1,18 @@
+<.live_component
+  module={GymratWeb.HeaderComponent}
+  id="header"
+  current_user={@current_user}
+/>
+
+<h1>Workouts</h1>
+
+<ul>
+  <%= for workout <- @workouts do %>
+    <li>{workout.name}</li>
+  <% end %>
+</ul>
+
+<form phx-submit="save">
+  <input type="text" name="workout[name]" placeholder="Workout name" />
+  <button type="submit">Add Workout</button>
+</form>
