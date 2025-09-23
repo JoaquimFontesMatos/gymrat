@@ -5,9 +5,8 @@ defmodule Gymrat.Plans.Plan do
   schema "plans" do
     field :name, :string
 
-    belongs_to :creator, Gymrat.Users.User
-    many_to_many :users, Gymrat.Users.User, join_through: "user_plans"
-    many_to_many :workouts, Gymrat.Workouts.Workout, join_through: "plan_workouts"
+    belongs_to :creator, Gymrat.Accounts.User
+    has_many :workouts, Gymrat.Workouts.Workout
 
     timestamps()
   end

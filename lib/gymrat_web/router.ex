@@ -1,6 +1,8 @@
 defmodule GymratWeb.Router do
   use GymratWeb, :router
 
+  import GymratWeb.UserAuth
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -8,40 +10,22 @@ defmodule GymratWeb.Router do
     plug :put_root_layout, html: {GymratWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_scope_for_user
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/", GymratWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
-    # Form to set name
-    get "/identify", UserIdentifierController, :new
-    # Process name
-    post "/identify", UserIdentifierController, :create
-    live "/workouts", WorkoutLive.Index
-  end
-
-  scope "/api", GymratWeb do
-    pipe_through :api
-
-    # Exercises (real-time)
-    get "/exercises", ExerciseController, :index
-    get "/exercises/:id", ExerciseController, :show
-
-    # Workouts / Sets (user data)
-    resources "/workouts", WorkoutController, only: [:create, :show]
-    # resources "/sets", SetController, only: [:index, :create]
-    # resources "/users", UserController, only: [:index, :create]
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", GymratWeb do
   #   pipe_through :api
   # end
+  scope "/", GymratWeb do
+    pipe_through :browser
+
+    # get "/", PageController, :home
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:gymrat, :dev_routes) do
@@ -58,5 +42,50 @@ defmodule GymratWeb.Router do
       live_dashboard "/dashboard", metrics: GymratWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  scope "/api", GymratWeb do
+    pipe_through :api
+
+    # Exercises (real-time)
+    get "/exercises", ExerciseController, :index
+    get "/exercises/:id", ExerciseController, :show
+
+    # Workouts / Sets (user data)
+    resources "/workouts", WorkoutController, only: [:create, :show]
+    # resources "/sets", SetController, only: [:index, :create]
+    # resources "/users", UserController, only: [:index, :create]
+  end
+
+  ## Authentication routes
+
+  scope "/", GymratWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :require_authenticated_user,
+      on_mount: [{GymratWeb.UserAuth, :require_authenticated}] do
+      live "/", PlanLive.Dashboard, :dashboard
+      live "/plans/new", PlanLive.Create, :new_plan
+      live "/plans/:id", PlanLive.Details, :plan_details
+      live "/plans/:id/workouts/new", WorkoutLive.Create, :new_workout
+      live "/users/settings", UserLive.Settings, :edit
+      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+    end
+
+    post "/users/update-password", UserSessionController, :update_password
+  end
+
+  scope "/", GymratWeb do
+    pipe_through [:browser]
+
+    live_session :current_user,
+      on_mount: [{GymratWeb.UserAuth, :mount_current_scope}] do
+      live "/users/register", UserLive.Registration, :new
+      live "/users/log-in", UserLive.Login, :new
+      live "/users/log-in/:token", UserLive.Confirmation, :new
+    end
+
+    post "/users/log-in", UserSessionController, :create
+    delete "/users/log-out", UserSessionController, :delete
   end
 end

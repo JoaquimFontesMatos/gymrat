@@ -5,8 +5,7 @@ defmodule Gymrat.Workouts.Workout do
   schema "workouts" do
     field :name, :string
 
-    belongs_to :creator, Gymrat.Users.User
-    many_to_many :plans, Gymrat.Plans.Plan, join_through: "plan_workouts"
+    belongs_to :plan, Gymrat.Plans.Plan
     has_many :workout_exercises, Gymrat.Workouts.WorkoutExercise
 
     timestamps()
@@ -14,7 +13,7 @@ defmodule Gymrat.Workouts.Workout do
 
   def changeset(workout, attrs) do
     workout
-    |> cast(attrs, [:name, :creator_id])
-    |> validate_required([:name, :creator_id])
+    |> cast(attrs, [:name, :plan_id])
+    |> validate_required([:name, :plan_id])
   end
 end

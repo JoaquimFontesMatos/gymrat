@@ -3,67 +3,17 @@ defmodule Gymrat.Training do
   alias Gymrat.Repo
 
   alias Gymrat.Plans.Plan
-  alias Gymrat.Users.User
   alias Gymrat.Workouts.{Workout, WorkoutExercise, Set}
-
-  # ---------------------------
-  # Users
-  # ---------------------------
-  def list_users do
-    Repo.all(User)
-  end
-
-  def get_user!(id), do: Repo.get!(User, id)
-
-  # Modified to create or find a user by name
-  def get_or_create_user_by_name(name) do
-    case Repo.get_by(User, name: name) do
-      %User{} = user ->
-        # User found, return it
-        {:ok, user}
-
-      nil ->
-        # User not found, try to create a new one
-        # Only name is strictly required here for identification
-        attrs = %{"name" => name}
-
-        %User{}
-        # Use the generic changeset
-        |> User.changeset(attrs)
-        |> Repo.insert()
-    end
-  end
-
-  def create_user(attrs \\ %{}) do
-    %User{}
-    |> User.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def change_user(%User{} = user, attrs \\ %{}) do
-    User.changeset(user, attrs)
-  end
-
-  # def update_user(%User{} = user, attrs) do
-  # user
-  #  # Use update_changeset if you have one
-  # |> User.update_changeset(attrs)
-  #  |> Repo.update()
-  # end
-
-  def delete_user(%User{} = user) do
-    Repo.delete(user)
-  end
-
-  def get_user_by_name(name) do
-    Repo.get_by(User, name: name)
-  end
 
   # ---------------------------
   # Plans
   # ---------------------------
   def list_plans do
     Repo.all(Plans)
+  end
+
+  def list_my_plans(user_id) do
+    Repo.all(from p in Plan, where: p.creator_id == ^user_id)
   end
 
   def get_plan!(id) do
@@ -76,10 +26,27 @@ defmodule Gymrat.Training do
     |> Repo.insert()
   end
 
+  def change_plan(attrs \\ %{}) do
+    %Plan{}
+    |> Plan.changeset(attrs)
+  end
+
   # Workouts
   # ---------------------------
   def list_workouts do
     Repo.all(Workout)
+  end
+
+  def get_plan_with_workouts(plan_id) do
+    case Repo.get(Plan, plan_id) do
+      %Plan{} = plan ->
+        # Preload workouts, and for each workout, preload its plan
+        Repo.preload(plan, workouts: [:plan])
+
+      nil ->
+        # Or {:error, :not_found}
+        nil
+    end
   end
 
   def get_workout!(id) do
@@ -91,6 +58,11 @@ defmodule Gymrat.Training do
     %Workout{}
     |> Workout.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def change_workout(attrs \\ %{}) do
+    %Workout{}
+    |> Workout.changeset(attrs)
   end
 
   # ---------------------------
