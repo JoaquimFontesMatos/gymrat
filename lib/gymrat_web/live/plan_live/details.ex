@@ -15,7 +15,7 @@ defmodule GymratWeb.PlanLive.Details do
           <li class="mb-2 p-2 border rounded flex justify-between items-center">
             <span>{workout.name}</span>
             <div>
-              <.button phx-click="go_to_workout" phx-value-plan-id={workout.id}>
+              <.button phx-click="go_to_workout" phx-value-workout-id={workout.id}>
                 Details
               </.button>
             </div>
@@ -68,6 +68,16 @@ defmodule GymratWeb.PlanLive.Details do
       socket
       # Navigate via LiveView push_navigate
       |> push_navigate(to: ~p"/plans/#{socket.assigns.plan.id}/workouts/new")
+    }
+  end
+
+  @impl true
+  def handle_event("go_to_workout", %{"workout-id" => workout_id}, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(to: ~p"/plans/#{socket.assigns.plan.id}/workouts/#{workout_id}")
     }
   end
 end

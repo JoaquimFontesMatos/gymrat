@@ -68,6 +68,19 @@ defmodule Gymrat.Training do
   # ---------------------------
   # WorkoutExercises
   # ---------------------------
+
+  def get_workout_with_exercises(workout_id) do
+    case Repo.get(Workout, workout_id) do
+      %Workout{} = workout ->
+        # Preload workouts, and for each workout, preload its plan
+        Repo.preload(workout, workout_exercises: [:workout])
+
+      nil ->
+        # Or {:error, :not_found}
+        nil
+    end
+  end
+
   def list_workout_exercises do
     Repo.all(WorkoutExercise)
   end
@@ -91,8 +104,32 @@ defmodule Gymrat.Training do
     |> Repo.insert()
   end
 
-  # Preload sets for a workout (through workout_exercises)
-  def preload_sets(workout) do
-    Repo.preload(workout, workout_exercises: :sets)
+  def get_workout_exercise_with_sets(workout_exercise_id) do
+    case Repo.get(WorkoutExercise, workout_exercise_id) do
+      %WorkoutExercise{} = workout_exercise ->
+        # Preload workouts, and for each workout, preload its plan
+        Repo.preload(workout_exercise, sets: [:workout_exercise])
+
+      nil ->
+        # Or {:error, :not_found}
+        nil
+    end
+  end
+
+  def get_todays_workout_exercise_with_sets(workout_exercise_id) do
+    case Repo.get(WorkoutExercise, workout_exercise_id) do
+      %WorkoutExercise{} = workout_exercise ->
+        # Preload workouts, and for each workout, preload its plan
+        Repo.preload(workout_exercise, sets: [:workout_exercise])
+
+      nil ->
+        # Or {:error, :not_found}
+        nil
+    end
+  end
+
+  def change_set(attrs \\ %{}) do
+    %Set{}
+    |> Set.changeset(attrs)
   end
 end
