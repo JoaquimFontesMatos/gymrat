@@ -28,19 +28,16 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
+  ca_path =
+    Base.decode64!(
+      System.get_env!("DATABASE_CA") ||
+        raise("""
+        environment variable DATABASE_CA is missing.
+        For example: ecto://USER:PASS@HOST/DATABASE
+        """)
+    )
+
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
-
-  ca_cert =
-    case System.get_env("DATABASE_CA") do
-      nil ->
-        []
-
-      cert ->
-        cert
-        |> Base.decode64!()
-        |> :public_key.pem_decode()
-        |> Enum.map(&:public_key.pem_entry_decode/1)
-    end
 
   config :gymrat, Gymrat.Repo,
     url: database_url,
@@ -50,7 +47,7 @@ if config_env() == :prod do
     socket_options: maybe_ipv6,
     ssl: [
       verify: :verify_peer,
-      cacerts: ca_cert
+      cacertfile: ca_path
     ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
