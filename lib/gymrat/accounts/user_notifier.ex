@@ -9,7 +9,7 @@ defmodule Gymrat.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from(System.get_env("EMAIL_FROM"))
+      |> from({"Gymrat", System.get_env("EMAIL_FROM")})
       |> subject(subject)
       |> text_body(body)
 
