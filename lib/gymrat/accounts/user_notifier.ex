@@ -13,8 +13,14 @@ defmodule Gymrat.Accounts.UserNotifier do
       |> subject(subject)
       |> text_body(body)
 
-    with {:ok, _metadata} <- Mailer.deliver(email) do
-      {:ok, email}
+    case Mailer.deliver(email) do
+      {:ok, metadata} ->
+        IO.inspect(metadata, label: "Email sent successfully")
+        {:ok, email}
+
+      {:error, reason} ->
+        IO.inspect(reason, label: "Failed to send email")
+        {:error, reason}
     end
   end
 

@@ -73,7 +73,7 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-if config_env() in [:dev, :test] do
+if config_env() in [:dev, :prod, :test] do
   for path <- [".env.exs", ".env.#{config_env()}.exs"] do
     path = Path.join(__DIR__, "..") |> Path.join("config") |> Path.join(path) |> Path.expand()
     if File.exists?(path), do: import_config(path)

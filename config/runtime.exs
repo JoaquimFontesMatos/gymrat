@@ -121,13 +121,18 @@ if config_env() == :prod do
   # Here is an example configuration for Mailgun:
 
   config :gymrat, Gymrat.Mailer,
-    adapter: Swoosh.Adapters.SMTP,
-    relay: System.get_env("SMTP_RELAY"),
-    username: System.get_env("SMTP_USERNAME"),
-    password: System.get_env("SMTP_PASSWORD"),
-    port: 587,
-    ssl: [verify: :verify_none],
-    retries: 2
+    adapter: Swoosh.Adapters.Brevo,
+    api_key: System.get_env("BREVO_API_KEY")
+
+  # config :gymrat, Gymrat.Mailer,
+  # adapter: Swoosh.Adapters.SMTP,
+  # relay: "smtp.gmail.com",
+  # username: System.get_env("SMTP_USERNAME"),
+  # password: System.get_env("SMTP_PASSWORD"),
+  # port: 587,
+  # ssl: false,
+  #  tls: :always,
+  #   auth: :always
 
   # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
   # and Finch out-of-the-box. This configuration is typically done at
