@@ -30,7 +30,7 @@ if config_env() == :prod do
 
   ca_cert =
     Base.decode64!(
-      System.get_env!("DATABASE_CA") ||
+      System.get_env("DATABASE_CA") ||
         raise("""
         environment variable DATABASE_CA is missing.
         For example: ecto://USER:PASS@HOST/DATABASE
