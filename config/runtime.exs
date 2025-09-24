@@ -38,6 +38,7 @@ if config_env() == :prod do
     pool_count: 4,
     socket_options: maybe_ipv6,
     ssl: [
+      verify: :none,
       cacertfile: Path.join([:code.priv_dir(:gymrat), "certs", "ca.pem"])
     ]
 
