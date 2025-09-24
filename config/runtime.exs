@@ -126,7 +126,6 @@ if config_env() == :prod do
     username: System.get_env("SMTP_USERNAME"),
     password: System.get_env("SMTP_PASSWORD"),
     port: 587,
-    tls: :if_available,
     ssl: [verify: :verify_none],
     retries: 2
 
