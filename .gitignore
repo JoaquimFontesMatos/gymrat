@@ -35,4 +35,6 @@ gymrat-*.tar
 npm-debug.log
 /assets/node_modules/
 
+/priv/certs/
+
 /config/.env.exs
