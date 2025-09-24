@@ -124,6 +124,10 @@ if config_env() == :prod do
     adapter: Swoosh.Adapters.Brevo,
     api_key: System.get_env("BREVO_API_KEY")
 
+  config :gymrat, :rapidapi,
+    host: System.get_env("RAPIDAPI_HOST"),
+    key: System.get_env("RAPIDAPI_KEY")
+
   # config :gymrat, Gymrat.Mailer,
   # adapter: Swoosh.Adapters.SMTP,
   # relay: "smtp.gmail.com",
