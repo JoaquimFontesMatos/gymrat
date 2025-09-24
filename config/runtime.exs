@@ -127,10 +127,8 @@ if config_env() == :prod do
     password: System.get_env("SMTP_PASSWORD"),
     port: 587,
     tls: :if_available,
-    auth: :always,
-    ssl: true,
-    retries: 2,
-    no_mx_lookups: false
+    ssl: [verify: :verify_none],
+    retries: 2
 
   # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
   # and Finch out-of-the-box. This configuration is typically done at
