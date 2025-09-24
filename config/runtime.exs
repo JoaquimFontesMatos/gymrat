@@ -31,12 +31,16 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :gymrat, Gymrat.Repo,
-    # ssl: true,
+    ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
-    # pool_count: 4,
-    socket_options: maybe_ipv6
+    pool_count: 4,
+    socket_options: maybe_ipv6,
+    ssl_opts: [
+      verify: :verify_peer,
+      cacerts: [Base.decode64!(System.get_env("DATABASE_CA_CERTIFICATE"))]
+    ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -99,16 +103,23 @@ if config_env() == :prod do
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
 
-  # ## Configuring the mailer
+  ### Configuring the mailer
   #
   # In production you need to configure the mailer to use a different adapter.
   # Here is an example configuration for Mailgun:
-  #
-  #     config :gymrat, Gymrat.Mailer,
-  #       adapter: Swoosh.Adapters.Mailgun,
-  #       api_key: System.get_env("MAILGUN_API_KEY"),
-  #       domain: System.get_env("MAILGUN_DOMAIN")
-  #
+
+  config :gymrat, Gymrat.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: System.get_env("SMTP_RELAY"),
+    username: System.get_env("SMTP_USERNAME"),
+    password: System.get_env("SMTP_PASSWORD"),
+    port: 587,
+    tls: :if_available,
+    auth: :always,
+    ssl: true,
+    retries: 2,
+    no_mx_lookups: false
+
   # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
   # and Finch out-of-the-box. This configuration is typically done at
   # compile-time in your config/prod.exs:
