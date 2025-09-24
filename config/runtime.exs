@@ -28,18 +28,22 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  ca_cert =
-    Base.decode64!(
-      System.get_env("DATABASE_CA") ||
-        raise("""
-        environment variable DATABASE_CA is missing.
-        For example: ecto://USER:PASS@HOST/DATABASE
-        """)
-    )
+  # ca_cert =
+  # Base.decode64!(
+  #   System.get_env("DATABASE_CA") ||
+  #    raise("""
+  #     environment variable DATABASE_CA is missing.
+  #    For example: ecto://USER:PASS@HOST/DATABASE
+  #    """)
+  # )
 
   # write to a temp path
-  ca_path = Path.join(System.tmp_dir!(), "ca.pem")
-  File.write!(ca_path, ca_cert)
+  # ca_path = Path.join(System.tmp_dir!(), "ca.pem")
+  # File.write!(ca_path, ca_cert)
+
+  ca_pem =
+    System.get_env("DATABASE_CA")
+    |> Base.decode64!()
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
@@ -51,7 +55,8 @@ if config_env() == :prod do
     socket_options: maybe_ipv6,
     ssl: [
       verify: :verify_peer,
-      cacertfile: ca_path
+      # cacertfile: ca_path
+      cacerts: [X509.Certificate.from_pem!(ca_pem)]
     ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
