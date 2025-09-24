@@ -30,6 +30,18 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  ca_cert =
+    case System.get_env("DATABASE_CA") do
+      nil ->
+        []
+
+      cert ->
+        cert
+        |> Base.decode64!()
+        |> :public_key.pem_decode()
+        |> Enum.map(&:public_key.pem_entry_decode/1)
+    end
+
   config :gymrat, Gymrat.Repo,
     ssl: true,
     url: database_url,
@@ -37,9 +49,9 @@ if config_env() == :prod do
     # For machines with several cores, consider starting multiple pools of `pool_size`
     pool_count: 4,
     socket_options: maybe_ipv6,
-    ssl: [
-      verify: :verify_none
-      # cacertfile: Path.join([:code.priv_dir(:gymrat), "certs", "ca.pem"])
+    ssl_opts: [
+      verify: :verify_peer,
+      cacerts: ca_cert
     ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
