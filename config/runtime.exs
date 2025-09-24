@@ -28,7 +28,7 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  ca_path =
+  ca_cert =
     Base.decode64!(
       System.get_env!("DATABASE_CA") ||
         raise("""
@@ -36,6 +36,10 @@ if config_env() == :prod do
         For example: ecto://USER:PASS@HOST/DATABASE
         """)
     )
+
+  # write to a temp path
+  ca_path = Path.join(System.tmp_dir!(), "ca.pem")
+  File.write!(ca_path, ca_cert)
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
