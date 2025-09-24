@@ -38,8 +38,8 @@ if config_env() == :prod do
     pool_count: 4,
     socket_options: maybe_ipv6,
     ssl: [
-      verify: :verify_peer,
-      cacertfile: Path.join([:code.priv_dir(:gymrat), "certs", "ca.pem"])
+      verify: :verify_none
+      # cacertfile: Path.join([:code.priv_dir(:gymrat), "certs", "ca.pem"])
     ]
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
