@@ -10,6 +10,10 @@ config :gymrat, Gymrat.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+config :gymrat, :rapidapi,
+  host: System.get_env("RAPIDAPI_HOST"),
+  key: System.get_env("RAPIDAPI_KEY")
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

@@ -15,7 +15,15 @@ defmodule GymratWeb.ExerciseLive.Add do
 
     # Assign initial form, then fetch exercises.
     # The `fetch_exercises` helper should also ensure `search_form` is assigned.
-    socket = assign(socket, search_form: initial_form, plan_id: plan_id, workout_id: workout_id)
+    # Initialize to avoid KeyError
+    socket =
+      assign(socket,
+        search_form: initial_form,
+        plan_id: plan_id,
+        workout_id: workout_id,
+        current_exercise_id: nil,
+        exercise_details: nil
+      )
 
     {:ok, fetch_exercises(socket, nil)}
   end
@@ -43,15 +51,47 @@ defmodule GymratWeb.ExerciseLive.Add do
           <%= if @exercises_ids && !Enum.empty?(@exercises_ids) do %>
             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <%= for exercise_id <- @exercises_ids do %>
-                <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <h2 class="text-xl font-semibold mb-2">
-                    {exercise_id
-                    |> String.replace("_", " ")
-                    |> String.capitalize()}
-                  </h2>
-                  <p class="text-gray-600">ID: {exercise_id}</p>
-                  <div class="mt-4"></div>
-                  <div class="flex justify-end">
+                <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-between">
+                  <div
+                    phx-click="toggle_exercise_details"
+                    phx-value-exercise-id={exercise_id}
+                    class="cursor-pointer grow pb-4"
+                  >
+                    <h2 class="text-xl font-semibold mb-2">
+                      {exercise_id
+                      |> String.replace("_", " ")
+                      |> String.capitalize()}
+                    </h2>
+
+                    <%= if @current_exercise_id == exercise_id && @exercise_details do %>
+                      <%= if @loading do %>
+                        <div class="mt-2 p-2 bg-gray-100 rounded">
+                          <p>Loading details...</p>
+                        </div>
+                      <% else %>
+                        <div class="mt-2 p-2 rounded">
+                          <img
+                            src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise_id}/0.jpg"}
+                            data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise_id}/0.png"}
+                            data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise_id}/0.webp"}
+                            alt="Exercise Image"
+                            class="w-full h-24 object-cover"
+                            onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+                          />
+                          <!-- Optionally add more fields, e.g., muscles -->
+                          <p>
+                            <strong>Primary Muscles:</strong> {Enum.join(
+                              @exercise_details["primaryMuscles"] || [],
+                              ", "
+                            )}
+                          </p>
+                          <p><strong>Level:</strong> {@exercise_details["level"] || "N/A"}</p>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+
+                  <div class="m-auto">
                     <.button
                       type="button"
                       class="btn btn-primary"
@@ -115,6 +155,20 @@ defmodule GymratWeb.ExerciseLive.Add do
     end
   end
 
+  @impl true
+  def handle_event("toggle_exercise_details", %{"exercise-id" => exercise_id}, socket) do
+    socket =
+      if socket.assigns.current_exercise_id == exercise_id do
+        assign(socket, current_exercise_id: nil, exercise_details: nil)
+      else
+        socket
+        |> assign(current_exercise_id: exercise_id)
+        |> fetch_exercise(exercise_id)
+      end
+
+    {:noreply, socket}
+  end
+
   defp fetch_exercises(socket, query) do
     socket = assign(socket, loading: true)
 
@@ -141,6 +195,28 @@ defmodule GymratWeb.ExerciseLive.Add do
           loading: false,
           search_form: to_form(%{"query" => actual_query}, as: :search_form)
         )
+    end
+  end
+
+  defp fetch_exercise(socket, id) do
+    socket = assign(socket, loading: true)
+
+    case id do
+      id when is_binary(id) and id != "" ->
+        case ExerciseFetcher.fetch_exercise(id) do
+          {:ok, exercise_details} ->
+            assign(socket, exercise_details: exercise_details, loading: false)
+
+          {:error, reason} ->
+            socket
+            |> put_flash(:error, "Failed to fetch exercise details: #{inspect(reason)}")
+            |> assign(exercise_details: %{}, loading: false)
+        end
+
+      _ ->
+        socket
+        |> put_flash(:error, "Failed to fetch exercise details: Missing or invalid ID")
+        |> assign(exercise_details: %{}, loading: false)
     end
   end
 end
