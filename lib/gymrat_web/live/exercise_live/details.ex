@@ -79,22 +79,22 @@ defmodule GymratWeb.ExerciseLive.Details do
 
     exercise = Training.get_todays_workout_exercise_with_sets(exercise_id)
 
-    daily_weight = Training.get_set_sum_weight_by_day(exercise_id)
-    # Build chart data
-    weight_labels = Enum.map(daily_weight, &Calendar.strftime(&1.day, "%d-%m-%y"))
-    weight_data = Enum.map(daily_weight, & &1.total_weight)
-
     daily_reps = Training.get_set_sum_reps_by_day(exercise_id)
-    # Build chart data
+    # Build reps chart data
     reps_labels = Enum.map(daily_reps, &Calendar.strftime(&1.day, "%d-%m-%y"))
     reps_data = Enum.map(daily_reps, & &1.total_reps)
 
-    weight_chart_data = %{
-      labels: weight_labels,
+    daily_weight = Training.get_set_sum_weight_by_day(exercise_id)
+    # Build weight chart data
+    weight_labels = Enum.map(daily_weight, &Calendar.strftime(&1.day, "%d-%m-%y"))
+    weight_data = Enum.map(daily_weight, & &1.total_weight)
+
+    reps_chart_data = %{
+      labels: reps_labels,
       datasets: [
         %{
-          label: "Daily Weight Volume (kg)",
-          data: weight_data,
+          label: "Daily Reps Volume (kg)",
+          data: reps_data,
           borderColor: "rgb(59, 130, 246)",
           backgroundColor: "rgba(59, 130, 246, 0.2)",
           fill: true,
@@ -103,12 +103,12 @@ defmodule GymratWeb.ExerciseLive.Details do
       ]
     }
 
-    reps_chart_data = %{
-      labels: reps_labels,
+    weight_chart_data = %{
+      labels: weight_labels,
       datasets: [
         %{
-          label: "Daily Reps Volume (kg)",
-          data: reps_data,
+          label: "Daily Weight Volume (kg)",
+          data: weight_data,
           borderColor: "rgb(59, 130, 246)",
           backgroundColor: "rgba(59, 130, 246, 0.2)",
           fill: true,
