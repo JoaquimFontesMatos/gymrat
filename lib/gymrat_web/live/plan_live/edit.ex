@@ -1,4 +1,4 @@
-defmodule GymratWeb.PlanLive.Create do
+defmodule GymratWeb.PlanLive.Edit do
   use GymratWeb, :live_view
 
   alias Gymrat.Training
@@ -13,13 +13,13 @@ defmodule GymratWeb.PlanLive.Create do
             field={@form[:name]}
             type="text"
             label="Plan Name"
-            placeholder="Enter plan name"
+            placeholder="Enter new plan name"
             required
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Creating plan..." class="btn btn-primary w-full">
-            Create a Plan
+          <.button phx-disable-with="Updating plan..." class="btn btn-primary w-full">
+            Update the Plan
           </.button>
         </.form>
       </div>
@@ -28,29 +28,34 @@ defmodule GymratWeb.PlanLive.Create do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
-    changeset = Training.change_plan_map(%{})
+  def mount(%{"id" => plan_id}, _session, socket) do
+    plan_id = String.to_integer(plan_id)
 
-    {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
+    plan = Training.get_plan!(plan_id)
+    changeset = Training.change_plan(plan)
+
+    socket =
+      socket
+      |> assign(:plan, plan)
+      |> assign_form(changeset)
+
+    {:ok, socket}
   end
 
   @impl true
   def handle_event("save", %{"plan" => plan_params}, socket) do
-    # Access the user from the socket's assigns
-    user = socket.assigns.current_scope.user
+    plan = socket.assigns.plan
 
-    plan_params = Map.put(plan_params, "creator_id", user.id)
-
-    case Training.create_plan(plan_params) do
-      {:ok, _} ->
+    case Training.update_plan(plan, plan_params) do
+      {:ok, updated_plan} ->
         {
           :noreply,
           socket
           |> put_flash(
             :info,
-            "The plan was created!"
+            "The plan was updated!"
           )
-          |> push_navigate(to: ~p"/")
+          |> push_navigate(to: ~p"/plans/#{updated_plan.id}")
         }
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -59,12 +64,14 @@ defmodule GymratWeb.PlanLive.Create do
   end
 
   def handle_event("validate", %{"plan" => plan_params}, socket) do
-    changeset = Training.change_plan_map(plan_params)
+    plan = socket.assigns.plan
+    changeset = Training.change_plan(plan, plan_params)
+
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     form = to_form(changeset, as: "plan")
-    assign(socket, form: form)
+    assign(socket, :form, form)
   end
 end

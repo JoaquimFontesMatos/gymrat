@@ -67,6 +67,7 @@ defmodule GymratWeb.Router do
       live "/", PlanLive.Dashboard, :dashboard
       live "/plans/new", PlanLive.Create, :new_plan
       live "/plans/:id", PlanLive.Details, :plan_details
+      live "/plans/:id/edit", PlanLive.Edit, :edit_plan
       live "/plans/:id/workouts/new", WorkoutLive.Create, :new_workout
       live "/plans/:plan_id/workouts/:workout_id", WorkoutLive.Details, :workout_details
       live "/plans/:plan_id/workouts/:workout_id/exercises/new", ExerciseLive.Add, :new_exercise

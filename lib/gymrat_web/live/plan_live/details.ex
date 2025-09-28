@@ -33,6 +33,15 @@ defmodule GymratWeb.PlanLive.Details do
         <% end %>
       </ul>
 
+      <div class="flex justify-end flex-wrap">
+        <.button phx-click="update_plan">
+          Update
+        </.button>
+        <.button phx-click="delete_plan" class="btn btn-danger">
+          Delete
+        </.button>
+      </div>
+
       <.button phx-click="back_to_dashboard">
         Back to Dashboard
       </.button>
@@ -69,6 +78,42 @@ defmodule GymratWeb.PlanLive.Details do
       # Navigate via LiveView push_navigate
       |> push_navigate(to: ~p"/plans/#{socket.assigns.plan.id}/workouts/new")
     }
+  end
+
+  @impl true
+  def handle_event("update_plan", _payload, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(to: ~p"/plans/#{socket.assigns.plan.id}/edit")
+    }
+  end
+
+  @impl true
+  def handle_event("delete_plan", _payload, socket) do
+    case Training.soft_delete_plan(socket.assigns.plan) do
+      {:ok, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :info,
+            "The plan was deleted!"
+          )
+          |> push_navigate(to: ~p"/")
+        }
+
+      {:error, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :error,
+            "Failed to delete the plan!"
+          )
+        }
+    end
   end
 
   @impl true

@@ -4,6 +4,7 @@ defmodule Gymrat.Plans.Plan do
 
   schema "plans" do
     field :name, :string
+    field :deleted_at, :naive_datetime
 
     belongs_to :creator, Gymrat.Accounts.User
     has_many :workouts, Gymrat.Workouts.Workout

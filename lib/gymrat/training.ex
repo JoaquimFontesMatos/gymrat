@@ -1,6 +1,8 @@
 defmodule Gymrat.Training do
   import Ecto.Query, warn: false
   alias Gymrat.Repo
+  # If not already imported
+  import Ecto.Changeset
 
   alias Gymrat.Plans.Plan
   alias Gymrat.Workouts.{Workout, WorkoutExercise, Set}
@@ -9,15 +11,15 @@ defmodule Gymrat.Training do
   # Plans
   # ---------------------------
   def list_plans do
-    Repo.all(Plans)
+    Repo.all(from p in Plan, where: is_nil(p.deleted_at))
   end
 
   def list_my_plans(user_id) do
-    Repo.all(from p in Plan, where: p.creator_id == ^user_id)
+    Repo.all(from p in Plan, where: p.creator_id == ^user_id and is_nil(p.deleted_at))
   end
 
   def get_plan!(id) do
-    Repo.get!(Plan, id)
+    Repo.one!(from p in Plan, where: p.id == ^id, where: is_nil(p.deleted_at))
   end
 
   def create_plan(attrs \\ %{}) do
@@ -26,9 +28,24 @@ defmodule Gymrat.Training do
     |> Repo.insert()
   end
 
-  def change_plan(attrs \\ %{}) do
-    %Plan{}
+  def update_plan(%Plan{} = plan, attrs) do
+    plan
     |> Plan.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def soft_delete_plan(%Plan{} = plan) do
+    plan
+    |> change(deleted_at: NaiveDateTime.local_now())
+    |> Repo.update()
+  end
+
+  def change_plan(%Plan{} = plan, attrs \\ %{}) do
+    Plan.changeset(plan, attrs)
+  end
+
+  def change_plan_map(attrs) do
+    Plan.changeset(%Plan{}, attrs)
   end
 
   # Workouts
