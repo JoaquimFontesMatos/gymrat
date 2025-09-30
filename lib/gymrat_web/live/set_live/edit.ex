@@ -1,4 +1,4 @@
-defmodule GymratWeb.SetLive.Create do
+defmodule GymratWeb.SetLive.Edit do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Sets
@@ -27,8 +27,8 @@ defmodule GymratWeb.SetLive.Create do
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Creating set..." class="btn btn-primary w-full">
-            Create a Set
+          <.button phx-disable-with="Updating set..." class="btn btn-primary w-full">
+            Update the Set
           </.button>
         </.form>
       </div>
@@ -38,39 +38,50 @@ defmodule GymratWeb.SetLive.Create do
 
   @impl true
   def mount(
-        %{"plan_id" => plan_id, "workout_id" => workout_id, "exercise_id" => exercise_id},
+        %{
+          "plan_id" => plan_id,
+          "workout_id" => workout_id,
+          "exercise_id" => exercise_id,
+          "set_id" => set_id
+        },
         _session,
         socket
       ) do
     plan_id = String.to_integer(plan_id)
     workout_id = String.to_integer(workout_id)
     exercise_id = String.to_integer(exercise_id)
+    set_id = String.to_integer(set_id)
 
-    changeset = Sets.change_set_map(%{})
+    fetched_set = Sets.get_set(set_id)
 
-    socket =
-      socket
-      # Call your helper function to assign :form
-      |> assign_form(changeset)
-      # Assign the plan_id to the socket as @plan_id
-      |> assign(plan_id: plan_id, workout_id: workout_id, exercise_id: exercise_id)
+    case fetched_set do
+      {:ok, set} ->
+        changeset = Sets.change_set(set)
 
-    # temporary_assigns should typically be for specific LiveView cases
-    {:ok, socket, temporary_assigns: [form: nil]}
+        socket =
+          socket
+          |> assign(plan_id: plan_id, workout_id: workout_id, exercise_id: exercise_id, set: set)
+          |> assign_form(changeset)
+
+        {:ok, socket}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
   end
 
   @impl true
   def handle_event("save", %{"set" => set_params}, socket) do
-    set_params = Map.put(set_params, "workout_exercise_id", socket.assigns.exercise_id)
+    set = socket.assigns.set
 
-    case Sets.create_set(set_params) do
-      {:ok, _} ->
+    case Sets.update_set(set, set_params) do
+      {:ok, updated_set} ->
         {
           :noreply,
           socket
           |> put_flash(
             :info,
-            "The set was created!"
+            "The set was updated!"
           )
           |> push_navigate(
             to:
@@ -84,12 +95,14 @@ defmodule GymratWeb.SetLive.Create do
   end
 
   def handle_event("validate", %{"set" => set_params}, socket) do
-    changeset = Sets.change_set_map(set_params)
+    set = socket.assigns.set
+    changeset = Sets.change_set(set, set_params)
+
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     form = to_form(changeset, as: "set")
-    assign(socket, form: form)
+    assign(socket, :form, form)
   end
 end

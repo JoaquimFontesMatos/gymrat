@@ -2,7 +2,7 @@ defmodule GymratWeb.ExerciseLive.Add do
   use GymratWeb, :live_view
 
   alias Gymrat.ExerciseFetcher
-  alias Gymrat.Training
+  alias Gymrat.Training.WorkoutExercises
 
   @impl true
   def mount(%{"plan_id" => plan_id, "workout_id" => workout_id}, _session, socket) do
@@ -136,7 +136,7 @@ defmodule GymratWeb.ExerciseLive.Add do
       "exercise_id" => exercise_id
     }
 
-    case Training.create_workout_exercise(workout_exercises_params) do
+    case WorkoutExercises.create_workout_exercise(workout_exercises_params) do
       {:ok, _} ->
         {
           :noreply,

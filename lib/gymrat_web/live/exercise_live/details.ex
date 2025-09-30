@@ -1,7 +1,8 @@
 defmodule GymratWeb.ExerciseLive.Details do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.WorkoutExercises
+  alias Gymrat.Training.Sets
 
   @impl true
   def render(assigns) do
@@ -39,15 +40,45 @@ defmodule GymratWeb.ExerciseLive.Details do
                 <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
                 <strong>Reps:</strong> {set.reps}
               </span>
+
+              <div class="flex justify-end flex-wrap">
+                <.button phx-click="update_set" phx-value-set-id={set.id}>
+                  Update
+                </.button>
+
+                <.button class="btn btn-error" phx-click="show_modal_set">
+                  Delete
+                </.button>
+
+                <.modal
+                  :if={@show_modal_set}
+                  id="confirm-modal_set"
+                  on_cancel={JS.push("hide_modal")}
+                >
+                  <h2>Are you sure you want to delete this set?</h2>
+                  <p>This action cannot be undone.</p>
+                  <div class="modal-action">
+                    <.button phx-click="hide_modal_set">
+                      Cancel
+                    </.button>
+                    <.button class="btn btn-error" phx-click="delete_set" phx-value-set-id={set.id}>
+                      Confirm
+                    </.button>
+                  </div>
+                </.modal>
+              </div>
             </li>
           <% end %>
 
           <%= if Enum.empty?(@exercise.sets) do %>
             <p>
               No sets added yet.
-              <a href={
-                ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@exercise.id}/sets/new"
-              }>
+              <a
+                class="underline hover:text-blue-500"
+                href={
+                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@exercise.id}/sets/new"
+                }
+              >
                 Add one!
               </a>
             </p>
@@ -57,6 +88,29 @@ defmodule GymratWeb.ExerciseLive.Details do
             </.button>
           <% end %>
         </ul>
+      </div>
+
+      <div class="flex justify-end flex-wrap">
+        <.button class="btn btn-error" phx-click="show_modal_exercise">
+          Delete
+        </.button>
+
+        <.modal
+          :if={@show_modal_exercise}
+          id="confirm-modal_exercise"
+          on_cancel={JS.push("hide_modal")}
+        >
+          <h2>Are you sure you want to delete this exercise?</h2>
+          <p>This action cannot be undone.</p>
+          <div class="modal-action">
+            <.button phx-click="hide_modal_exercise">
+              Cancel
+            </.button>
+            <.button class="btn btn-error" phx-click="delete_exercise">
+              Confirm
+            </.button>
+          </div>
+        </.modal>
       </div>
 
       <.button phx-click="back_to_workout">
@@ -77,14 +131,14 @@ defmodule GymratWeb.ExerciseLive.Details do
     workout_id = String.to_integer(workout_id)
     exercise_id = String.to_integer(exercise_id)
 
-    exercise = Training.get_todays_workout_exercise_with_sets(exercise_id)
+    exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id)
 
-    daily_reps = Training.get_set_sum_reps_by_day(exercise_id)
+    daily_reps = Sets.get_set_sum_reps_by_day(exercise_id)
     # Build reps chart data
     reps_labels = Enum.map(daily_reps, &Calendar.strftime(&1.day, "%d-%m-%y"))
     reps_data = Enum.map(daily_reps, & &1.total_reps)
 
-    daily_weight = Training.get_set_sum_weight_by_day(exercise_id)
+    daily_weight = Sets.get_set_sum_weight_by_day(exercise_id)
     # Build weight chart data
     weight_labels = Enum.map(daily_weight, &Calendar.strftime(&1.day, "%d-%m-%y"))
     weight_data = Enum.map(daily_weight, & &1.total_weight)
@@ -123,7 +177,9 @@ defmodule GymratWeb.ExerciseLive.Details do
        workout_id: workout_id,
        exercise: exercise,
        weight_chart_data: weight_chart_data,
-       reps_chart_data: reps_chart_data
+       reps_chart_data: reps_chart_data,
+       show_modal_set: false,
+       show_modal_exercise: false
      )}
   end
 
@@ -148,6 +204,111 @@ defmodule GymratWeb.ExerciseLive.Details do
       |> push_navigate(
         to:
           ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.exercise.id}/sets/new"
+      )
+    }
+  end
+
+  @impl true
+  def handle_event("show_modal_set", _params, socket) do
+    {:noreply, assign(socket, :show_modal_set, true)}
+  end
+
+  # Event to hide the modal
+  @impl true
+  def handle_event("hide_modal_set", _params, socket) do
+    {:noreply, assign(socket, :show_modal_set, false)}
+  end
+
+  @impl true
+  def handle_event("show_modal_exercise", _params, socket) do
+    {:noreply, assign(socket, :show_modal_exercise, true)}
+  end
+
+  # Event to hide the modal
+  @impl true
+  def handle_event("hide_modal_exercise", _params, socket) do
+    {:noreply, assign(socket, :show_modal_exercise, false)}
+  end
+
+  @impl true
+  def handle_event("delete_exercise", _payload, socket) do
+    case WorkoutExercises.soft_delete_workout_exercise(socket.assigns.exercise) do
+      {:ok, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :info,
+            "The exercise was deleted!"
+          )
+          |> push_navigate(
+            to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}"
+          )
+        }
+
+      {:error, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :error,
+            "Failed to delete the exercise!"
+          )
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("delete_set", %{"set-id" => set_id}, socket) do
+    case Sets.get_set(set_id) do
+      {:ok, set} ->
+        case Sets.soft_delete_set(set) do
+          {:ok, _} ->
+            {
+              :noreply,
+              socket
+              |> put_flash(
+                :info,
+                "The set was deleted!"
+              )
+              |> push_navigate(
+                to:
+                  ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.exercise.id}"
+              )
+            }
+
+          {:error, _} ->
+            {
+              :noreply,
+              socket
+              |> put_flash(
+                :error,
+                "Failed to delete the set!"
+              )
+            }
+        end
+
+      {:error, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :error,
+            :not_found
+          )
+        }
+    end
+  end
+
+  @impl true
+  def handle_event("update_set", %{"set-id" => set_id}, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(
+        to:
+          ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.exercise.id}/sets/#{set_id}/edit"
       )
     }
   end

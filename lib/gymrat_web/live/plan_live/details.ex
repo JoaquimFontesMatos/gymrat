@@ -76,9 +76,13 @@ defmodule GymratWeb.PlanLive.Details do
     plan_id = String.to_integer(plan_id)
 
     # Fetch workouts for this plan
-    plan = Workouts.get_plan_with_workouts(plan_id)
+    case Workouts.get_plan_with_workouts(plan_id) do
+      {:ok, plan} ->
+        {:ok, assign(socket, plan: plan, show_modal: false)}
 
-    {:ok, assign(socket, plan: plan, show_modal: false)}
+      {:error, _reason} ->
+        {:error, :not_found}
+    end
   end
 
   # Event to show the modal

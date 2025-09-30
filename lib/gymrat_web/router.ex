@@ -44,19 +44,6 @@ defmodule GymratWeb.Router do
     end
   end
 
-  scope "/api", GymratWeb do
-    pipe_through :api
-
-    # Exercises (real-time)
-    get "/exercises", ExerciseController, :index
-    get "/exercises/:id", ExerciseController, :show
-
-    # Workouts / Sets (user data)
-    resources "/workouts", WorkoutController, only: [:create, :show]
-    # resources "/sets", SetController, only: [:index, :create]
-    # resources "/users", UserController, only: [:index, :create]
-  end
-
   ## Authentication routes
 
   scope "/", GymratWeb do
@@ -80,6 +67,10 @@ defmodule GymratWeb.Router do
       live "/plans/:plan_id/workouts/:workout_id/exercises/:exercise_id/sets/new",
            SetLive.Create,
            :new_set
+
+      live "/plans/:plan_id/workouts/:workout_id/exercises/:exercise_id/sets/:set_id/edit",
+           SetLive.Edit,
+           :edit_set
 
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email

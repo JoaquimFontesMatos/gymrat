@@ -11,11 +11,12 @@ defmodule Gymrat.Training.Workouts do
   end
 
   def get_plan_with_workouts(plan_id) do
-    case Repo.get(Plan, plan_id) do
+    query = from p in Plan, where: p.id == ^plan_id, where: is_nil(p.deleted_at)
+
+    case Repo.one(query) do
       %Plan{} = plan ->
         active_workouts_query = from w in Workout, where: is_nil(w.deleted_at)
-        # Preload workouts, and for each workout, preload its plan
-        Repo.preload(plan, workouts: {active_workouts_query, [:plan]})
+        {:ok, Repo.preload(plan, workouts: {active_workouts_query, [:plan]})}
 
       nil ->
         {:error, :not_found}
@@ -24,10 +25,10 @@ defmodule Gymrat.Training.Workouts do
 
   def get_workout(id) do
     query = from w in Workout, where: w.id == ^id, where: is_nil(w.deleted_at)
-    active_exercises_query = from we in WorkoutExercise, where: is_nil(we.deleted_at)
 
     case Repo.one(query) do
       %Workout{} = workout ->
+        active_exercises_query = from we in WorkoutExercise, where: is_nil(we.deleted_at)
         {:ok, Repo.preload(workout, workout_exercises: {active_exercises_query, [:workout]})}
 
       nil ->

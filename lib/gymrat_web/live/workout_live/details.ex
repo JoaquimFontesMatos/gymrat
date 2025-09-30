@@ -162,7 +162,7 @@ defmodule GymratWeb.WorkoutLive.Details do
             :info,
             "The workout was deleted!"
           )
-          |> push_navigate(to: ~p"/")
+          |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}")
         }
 
       {:error, _} ->
