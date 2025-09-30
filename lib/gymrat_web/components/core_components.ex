@@ -469,4 +469,67 @@ defmodule GymratWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  # Modal Component (your provided code, integrated)
+  @doc """
+  Renders a modal.
+
+  ## Examples
+
+      <.modal id="confirm-modal">
+        This is a modal.
+      </.modal>
+
+  JS commands may be passed to the `:on_cancel` to configure
+  the closing/cancel event, for example:
+
+      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
+        This is another modal.
+      </.modal>
+
+  """
+  attr :id, :string, required: true
+  attr :on_cancel, JS, default: nil
+  slot :inner_block, required: true
+
+  def modal(assigns) do
+    ~H"""
+    <.portal id={@id} target="body">
+      <dialog
+        open
+        closedby={if @on_cancel, do: "any", else: "none"}
+        phx-mounted={
+          JS.ignore_attributes("open")
+          |> JS.transition({"ease-in duration-200", "opacity-0", "opacity-100"}, time: 0)
+        }
+        phx-remove={
+          JS.remove_attribute("open")
+          |> JS.transition({"ease-out duration-200", "opacity-100", "opacity-0"}, time: 0)
+        }
+        class="modal"
+      >
+        <.focus_wrap
+          class="modal-box w-11/12 max-w-2xl"
+          id={"#{@id}-container"}
+          tabindex="0"
+          phx-key="escape"
+          phx-window-keydown={@on_cancel}
+        >
+          <form :if={@on_cancel} method="dialog">
+            <button
+              phx-click={@on_cancel}
+              class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2"
+            >
+              ✕
+            </button>
+          </form>
+          {render_slot(@inner_block)}
+        </.focus_wrap>
+        <form :if={@on_cancel} method="dialog" class="modal-backdrop">
+          <button phx-click={@on_cancel}>close</button>
+        </form>
+      </dialog>
+    </.portal>
+    """
+  end
 end

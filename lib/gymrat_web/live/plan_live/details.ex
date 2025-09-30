@@ -1,8 +1,8 @@
-# lib/gymrat_web/live/plan_live/show.ex (Example)
 defmodule GymratWeb.PlanLive.Details do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.Plans
+  alias Gymrat.Training.Workouts
 
   @impl true
   def render(assigns) do
@@ -24,7 +24,10 @@ defmodule GymratWeb.PlanLive.Details do
 
         <%= if Enum.empty?(@plan.workouts) do %>
           <p>
-            No workouts created yet. <a href={~p"/plans/#{@plan.id}/workouts/new"}>Create one!</a>
+            No workouts created yet.
+            <a class="underline hover:text-blue-500" href={~p"/plans/#{@plan.id}/workouts/new"}>
+              Create one!
+            </a>
           </p>
         <% else %>
           <.button phx-click="create_workout" class="btn btn-primary w-full">
@@ -37,9 +40,27 @@ defmodule GymratWeb.PlanLive.Details do
         <.button phx-click="update_plan">
           Update
         </.button>
-        <.button phx-click="delete_plan" class="btn btn-danger">
+
+        <.button class="btn btn-error" phx-click="show_modal">
           Delete
         </.button>
+
+        <.modal
+          :if={@show_modal}
+          id="confirm-modal"
+          on_cancel={JS.push("hide_modal")}
+        >
+          <h2>Are you sure you want to delete this plan?</h2>
+          <p>This action cannot be undone.</p>
+          <div class="modal-action">
+            <.button phx-click="hide_modal">
+              Cancel
+            </.button>
+            <.button class="btn btn-error" phx-click="delete_plan">
+              Confirm
+            </.button>
+          </div>
+        </.modal>
       </div>
 
       <.button phx-click="back_to_dashboard">
@@ -55,9 +76,21 @@ defmodule GymratWeb.PlanLive.Details do
     plan_id = String.to_integer(plan_id)
 
     # Fetch workouts for this plan
-    plan = Training.get_plan_with_workouts(plan_id)
+    plan = Workouts.get_plan_with_workouts(plan_id)
 
-    {:ok, assign(socket, plan: plan)}
+    {:ok, assign(socket, plan: plan, show_modal: false)}
+  end
+
+  # Event to show the modal
+  @impl true
+  def handle_event("show_modal", _params, socket) do
+    {:noreply, assign(socket, :show_modal, true)}
+  end
+
+  # Event to hide the modal
+  @impl true
+  def handle_event("hide_modal", _params, socket) do
+    {:noreply, assign(socket, :show_modal, false)}
   end
 
   @impl true
@@ -92,7 +125,7 @@ defmodule GymratWeb.PlanLive.Details do
 
   @impl true
   def handle_event("delete_plan", _payload, socket) do
-    case Training.soft_delete_plan(socket.assigns.plan) do
+    case Plans.soft_delete_plan(socket.assigns.plan) do
       {:ok, _} ->
         {
           :noreply,

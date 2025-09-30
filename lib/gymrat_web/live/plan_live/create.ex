@@ -1,7 +1,7 @@
 defmodule GymratWeb.PlanLive.Create do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.Plans
 
   @impl true
   def render(assigns) do
@@ -29,7 +29,7 @@ defmodule GymratWeb.PlanLive.Create do
 
   @impl true
   def mount(_params, _session, socket) do
-    changeset = Training.change_plan_map(%{})
+    changeset = Plans.change_plan_map(%{})
 
     {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
   end
@@ -41,7 +41,7 @@ defmodule GymratWeb.PlanLive.Create do
 
     plan_params = Map.put(plan_params, "creator_id", user.id)
 
-    case Training.create_plan(plan_params) do
+    case Plans.create_plan(plan_params) do
       {:ok, _} ->
         {
           :noreply,
@@ -59,7 +59,7 @@ defmodule GymratWeb.PlanLive.Create do
   end
 
   def handle_event("validate", %{"plan" => plan_params}, socket) do
-    changeset = Training.change_plan_map(plan_params)
+    changeset = Plans.change_plan_map(plan_params)
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 

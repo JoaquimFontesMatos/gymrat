@@ -1,7 +1,7 @@
 defmodule GymratWeb.PlanLive.Dashboard do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.Plans
 
   @impl true
   def render(assigns) do
@@ -38,7 +38,7 @@ defmodule GymratWeb.PlanLive.Dashboard do
     user = socket.assigns.current_scope.user
 
     # `current_user` is already assigned by the on_mount hook
-    plans = Training.list_my_plans(user.id)
+    plans = Plans.list_my_plans(user.id)
     {:ok, assign(socket, current_user: user, plans: plans)}
   end
 

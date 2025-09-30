@@ -1,7 +1,7 @@
 defmodule GymratWeb.WorkoutLive.Details do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.Workouts
 
   @impl true
   def render(assigns) do
@@ -28,7 +28,12 @@ defmodule GymratWeb.WorkoutLive.Details do
         <%= if Enum.empty?(@workout.workout_exercises) do %>
           <p>
             No exercises added yet.
-            <a href={~p"/plans/#{@plan_id}/workouts/#{@workout.id}/exercises/new"}>Add one!</a>
+            <a
+              class="underline hover:text-blue-500"
+              href={~p"/plans/#{@plan_id}/workouts/#{@workout.id}/exercises/new"}
+            >
+              Add one!
+            </a>
           </p>
         <% else %>
           <.button phx-click="add_exercise" class="btn btn-primary w-full">
@@ -36,6 +41,33 @@ defmodule GymratWeb.WorkoutLive.Details do
           </.button>
         <% end %>
       </ul>
+
+      <div class="flex justify-end flex-wrap">
+        <.button phx-click="update_workout">
+          Update
+        </.button>
+
+        <.button class="btn btn-error" phx-click="show_modal">
+          Delete
+        </.button>
+
+        <.modal
+          :if={@show_modal}
+          id="confirm-modal"
+          on_cancel={JS.push("hide_modal")}
+        >
+          <h2>Are you sure you want to delete this workout?</h2>
+          <p>This action cannot be undone.</p>
+          <div class="modal-action">
+            <.button phx-click="hide_modal">
+              Cancel
+            </.button>
+            <.button class="btn btn-error" phx-click="delete_workout">
+              Confirm
+            </.button>
+          </div>
+        </.modal>
+      </div>
 
       <.button phx-click="back_to_plan">
         Back to Plan
@@ -50,9 +82,13 @@ defmodule GymratWeb.WorkoutLive.Details do
     plan_id = String.to_integer(plan_id)
     workout_id = String.to_integer(workout_id)
 
-    workout = Training.get_workout_with_exercises(workout_id)
+    case Workouts.get_workout(workout_id) do
+      {:ok, workout} ->
+        {:ok, assign(socket, plan_id: plan_id, workout: workout, show_modal: false)}
 
-    {:ok, assign(socket, plan_id: plan_id, workout: workout)}
+      {:error, _reason} ->
+        {:error, :not_found}
+    end
   end
 
   @impl true
@@ -78,6 +114,18 @@ defmodule GymratWeb.WorkoutLive.Details do
     }
   end
 
+  # Event to show the modal
+  @impl true
+  def handle_event("show_modal", _params, socket) do
+    {:noreply, assign(socket, :show_modal, true)}
+  end
+
+  # Event to hide the modal
+  @impl true
+  def handle_event("hide_modal", _params, socket) do
+    {:noreply, assign(socket, :show_modal, false)}
+  end
+
   @impl true
   def handle_event("go_to_exercise", %{"exercise-id" => exercise_id}, socket) do
     {
@@ -89,5 +137,43 @@ defmodule GymratWeb.WorkoutLive.Details do
           ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout.id}/exercises/#{exercise_id}"
       )
     }
+  end
+
+  @impl true
+  def handle_event("update_workout", _payload, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(
+        to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout.id}/edit"
+      )
+    }
+  end
+
+  @impl true
+  def handle_event("delete_workout", _payload, socket) do
+    case Workouts.soft_delete_workout(socket.assigns.workout) do
+      {:ok, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :info,
+            "The workout was deleted!"
+          )
+          |> push_navigate(to: ~p"/")
+        }
+
+      {:error, _} ->
+        {
+          :noreply,
+          socket
+          |> put_flash(
+            :error,
+            "Failed to delete the workout!"
+          )
+        }
+    end
   end
 end

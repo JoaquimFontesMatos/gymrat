@@ -5,6 +5,7 @@ defmodule Gymrat.Workouts.Set do
   schema "sets" do
     field :reps, :integer
     field :weight, :float
+    field :deleted_at, :naive_datetime
 
     belongs_to :workout_exercise, Gymrat.Workouts.WorkoutExercise
 

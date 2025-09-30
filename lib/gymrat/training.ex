@@ -1,86 +1,12 @@
 defmodule Gymrat.Training do
   import Ecto.Query, warn: false
   alias Gymrat.Repo
-  # If not already imported
-  import Ecto.Changeset
 
   alias Gymrat.Plans.Plan
   alias Gymrat.Workouts.{Workout, WorkoutExercise, Set}
 
-  # ---------------------------
-  # Plans
-  # ---------------------------
-  def list_plans do
-    Repo.all(from p in Plan, where: is_nil(p.deleted_at))
-  end
-
-  def list_my_plans(user_id) do
-    Repo.all(from p in Plan, where: p.creator_id == ^user_id and is_nil(p.deleted_at))
-  end
-
-  def get_plan!(id) do
-    Repo.one!(from p in Plan, where: p.id == ^id, where: is_nil(p.deleted_at))
-  end
-
-  def create_plan(attrs \\ %{}) do
-    %Plan{}
-    |> Plan.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def update_plan(%Plan{} = plan, attrs) do
-    plan
-    |> Plan.changeset(attrs)
-    |> Repo.update()
-  end
-
-  def soft_delete_plan(%Plan{} = plan) do
-    plan
-    |> change(deleted_at: NaiveDateTime.local_now())
-    |> Repo.update()
-  end
-
-  def change_plan(%Plan{} = plan, attrs \\ %{}) do
-    Plan.changeset(plan, attrs)
-  end
-
-  def change_plan_map(attrs) do
-    Plan.changeset(%Plan{}, attrs)
-  end
-
   # Workouts
   # ---------------------------
-  def list_workouts do
-    Repo.all(Workout)
-  end
-
-  def get_plan_with_workouts(plan_id) do
-    case Repo.get(Plan, plan_id) do
-      %Plan{} = plan ->
-        # Preload workouts, and for each workout, preload its plan
-        Repo.preload(plan, workouts: [:plan])
-
-      nil ->
-        # Or {:error, :not_found}
-        nil
-    end
-  end
-
-  def get_workout!(id) do
-    Repo.get!(Workout, id)
-    |> Repo.preload([:workout_exercises, workout_exercises: :sets])
-  end
-
-  def create_workout(attrs \\ %{}) do
-    %Workout{}
-    |> Workout.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  def change_workout(attrs \\ %{}) do
-    %Workout{}
-    |> Workout.changeset(attrs)
-  end
 
   # ---------------------------
   # WorkoutExercises

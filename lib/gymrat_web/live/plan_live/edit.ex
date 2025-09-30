@@ -1,7 +1,7 @@
 defmodule GymratWeb.PlanLive.Edit do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training
+  alias Gymrat.Training.Plans
 
   @impl true
   def render(assigns) do
@@ -31,22 +31,29 @@ defmodule GymratWeb.PlanLive.Edit do
   def mount(%{"id" => plan_id}, _session, socket) do
     plan_id = String.to_integer(plan_id)
 
-    plan = Training.get_plan!(plan_id)
-    changeset = Training.change_plan(plan)
+    fetched_plan = Plans.get_plan(plan_id)
 
-    socket =
-      socket
-      |> assign(:plan, plan)
-      |> assign_form(changeset)
+    case fetched_plan do
+      {:ok, plan} ->
+        changeset = Plans.change_plan(plan)
 
-    {:ok, socket}
+        socket =
+          socket
+          |> assign(:plan, plan)
+          |> assign_form(changeset)
+
+        {:ok, socket}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
   end
 
   @impl true
   def handle_event("save", %{"plan" => plan_params}, socket) do
     plan = socket.assigns.plan
 
-    case Training.update_plan(plan, plan_params) do
+    case Plans.update_plan(plan, plan_params) do
       {:ok, updated_plan} ->
         {
           :noreply,
@@ -65,7 +72,7 @@ defmodule GymratWeb.PlanLive.Edit do
 
   def handle_event("validate", %{"plan" => plan_params}, socket) do
     plan = socket.assigns.plan
-    changeset = Training.change_plan(plan, plan_params)
+    changeset = Plans.change_plan(plan, plan_params)
 
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
