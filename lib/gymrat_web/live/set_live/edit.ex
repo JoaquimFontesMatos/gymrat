@@ -75,7 +75,7 @@ defmodule GymratWeb.SetLive.Edit do
     set = socket.assigns.set
 
     case Sets.update_set(set, set_params) do
-      {:ok, updated_set} ->
+      {:ok, _} ->
         {
           :noreply,
           socket

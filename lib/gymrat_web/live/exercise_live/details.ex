@@ -91,7 +91,11 @@ defmodule GymratWeb.ExerciseLive.Details do
       </div>
 
       <div class="flex justify-end flex-wrap">
-        <.button class="btn btn-error" phx-click="show_modal_exercise">
+        <.button
+          :if={@is_workout_exercise_from_user}
+          class="btn btn-error"
+          phx-click="show_modal_exercise"
+        >
           Delete
         </.button>
 
@@ -126,19 +130,24 @@ defmodule GymratWeb.ExerciseLive.Details do
         _session,
         socket
       ) do
+    user = socket.assigns.current_scope.user
+
     # Convert ID from URL param
     plan_id = String.to_integer(plan_id)
     workout_id = String.to_integer(workout_id)
     exercise_id = String.to_integer(exercise_id)
 
-    exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id)
+    is_workout_exercise_from_user =
+      WorkoutExercises.is_workout_exercise_from_user(exercise_id, user.id)
 
-    daily_reps = Sets.get_set_sum_reps_by_day(exercise_id)
+    exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id, user.id)
+
+    daily_reps = Sets.get_set_sum_reps_by_day(exercise_id, user.id)
     # Build reps chart data
     reps_labels = Enum.map(daily_reps, &Calendar.strftime(&1.day, "%d-%m-%y"))
     reps_data = Enum.map(daily_reps, & &1.total_reps)
 
-    daily_weight = Sets.get_set_sum_weight_by_day(exercise_id)
+    daily_weight = Sets.get_set_sum_weight_by_day(exercise_id, user.id)
     # Build weight chart data
     weight_labels = Enum.map(daily_weight, &Calendar.strftime(&1.day, "%d-%m-%y"))
     weight_data = Enum.map(daily_weight, & &1.total_weight)
@@ -179,7 +188,8 @@ defmodule GymratWeb.ExerciseLive.Details do
        weight_chart_data: weight_chart_data,
        reps_chart_data: reps_chart_data,
        show_modal_set: false,
-       show_modal_exercise: false
+       show_modal_exercise: false,
+       is_workout_exercise_from_user: is_workout_exercise_from_user
      )}
   end
 

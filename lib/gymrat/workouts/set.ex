@@ -6,7 +6,7 @@ defmodule Gymrat.Workouts.Set do
     field :reps, :integer
     field :weight, :float
     field :deleted_at, :naive_datetime
-
+    belongs_to :user, Gymrat.Accounts.User
     belongs_to :workout_exercise, Gymrat.Workouts.WorkoutExercise
 
     timestamps()
@@ -14,7 +14,7 @@ defmodule Gymrat.Workouts.Set do
 
   def changeset(set, attrs) do
     set
-    |> cast(attrs, [:reps, :weight, :workout_exercise_id])
-    |> validate_required([:reps, :weight, :workout_exercise_id])
+    |> cast(attrs, [:reps, :weight, :workout_exercise_id, :user_id])
+    |> validate_required([:reps, :weight, :workout_exercise_id, :user_id])
   end
 end

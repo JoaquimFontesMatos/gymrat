@@ -61,7 +61,12 @@ defmodule GymratWeb.SetLive.Create do
 
   @impl true
   def handle_event("save", %{"set" => set_params}, socket) do
-    set_params = Map.put(set_params, "workout_exercise_id", socket.assigns.exercise_id)
+    user = socket.assigns.current_scope.user
+
+    set_params =
+      set_params
+      |> Map.put("workout_exercise_id", socket.assigns.exercise_id)
+      |> Map.put("user_id", user.id)
 
     case Sets.create_set(set_params) do
       {:ok, _} ->

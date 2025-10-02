@@ -29,6 +29,10 @@ defmodule GymratWeb.PlanLive.Dashboard do
           </.button>
         <% end %>
       </ul>
+
+      <.button phx-click="import_plan" class="btn btn-primary w-full">
+        Import a Plan
+      </.button>
     </Layouts.app>
     """
   end
@@ -60,6 +64,16 @@ defmodule GymratWeb.PlanLive.Dashboard do
       socket
       # Navigate via LiveView push_navigate
       |> push_navigate(to: ~p"/plans/new")
+    }
+  end
+
+  @impl true
+  def handle_event("import_plan", _payload, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(to: ~p"/plans/import")
     }
   end
 end

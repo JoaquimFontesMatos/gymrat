@@ -3,6 +3,7 @@ defmodule Gymrat.Training.WorkoutExercises do
   import Ecto.Changeset
 
   alias Gymrat.Repo
+  alias Gymrat.Plans.Plan
   alias Gymrat.Workouts.{Workout, WorkoutExercise}
 
   def get_workout_with_exercises(workout_id) do
@@ -18,6 +19,27 @@ defmodule Gymrat.Training.WorkoutExercises do
 
       nil ->
         {:error, :not_found}
+    end
+  end
+
+  def is_workout_exercise_from_user(id, user_id) do
+    query =
+      from we in WorkoutExercise,
+        join: w in Workout,
+        on: w.id == we.workout_id,
+        join: p in Plan,
+        on: p.id == w.plan_id,
+        where: w.id == ^id,
+        where: p.creator_id == ^user_id,
+        where: is_nil(we.deleted_at),
+        select: we
+
+    case Repo.one(query) do
+      %WorkoutExercise{} = _ ->
+        true
+
+      nil ->
+        false
     end
   end
 

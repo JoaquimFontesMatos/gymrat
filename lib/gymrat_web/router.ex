@@ -53,6 +53,7 @@ defmodule GymratWeb.Router do
       on_mount: [{GymratWeb.UserAuth, :require_authenticated}] do
       live "/", PlanLive.Dashboard, :dashboard
       live "/plans/new", PlanLive.Create, :new_plan
+      live "/plans/import", PlanLive.Import, :import_plan
       live "/plans/:id", PlanLive.Details, :plan_details
       live "/plans/:id/edit", PlanLive.Edit, :edit_plan
       live "/plans/:id/workouts/new", WorkoutLive.Create, :new_workout

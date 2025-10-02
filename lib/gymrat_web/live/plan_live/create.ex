@@ -41,7 +41,7 @@ defmodule GymratWeb.PlanLive.Create do
 
     plan_params = Map.put(plan_params, "creator_id", user.id)
 
-    case Plans.create_plan(plan_params) do
+    case Plans.create_plan(user.id, plan_params) do
       {:ok, _} ->
         {
           :noreply,

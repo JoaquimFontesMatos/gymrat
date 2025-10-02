@@ -5,6 +5,7 @@ defmodule Gymrat.Plans.Plan do
   schema "plans" do
     field :name, :string
     field :deleted_at, :naive_datetime
+    field :share_token, :string
 
     belongs_to :creator, Gymrat.Accounts.User
     has_many :workouts, Gymrat.Workouts.Workout
@@ -16,5 +17,17 @@ defmodule Gymrat.Plans.Plan do
     plan
     |> cast(attrs, [:name, :creator_id])
     |> validate_required([:name, :creator_id])
+    # Prevent duplicate tokens
+    |> unique_constraint(:share_token)
+  end
+
+  def creation_changeset(plan, attrs) do
+    plan
+    |> changeset(attrs)
+    |> put_change(:share_token, generate_share_token())
+  end
+
+  defp generate_share_token do
+    Ecto.UUID.generate()
   end
 end

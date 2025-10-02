@@ -29,6 +29,7 @@ defmodule GymratWeb.WorkoutLive.Details do
           <p>
             No exercises added yet.
             <a
+              :if={@is_workout_owner}
               class="underline hover:text-blue-500"
               href={~p"/plans/#{@plan_id}/workouts/#{@workout.id}/exercises/new"}
             >
@@ -36,18 +37,18 @@ defmodule GymratWeb.WorkoutLive.Details do
             </a>
           </p>
         <% else %>
-          <.button phx-click="add_exercise" class="btn btn-primary w-full">
+          <.button :if={@is_workout_owner} phx-click="add_exercise" class="btn btn-primary w-full">
             Add an Exercise
           </.button>
         <% end %>
       </ul>
 
-      <div class="flex justify-end flex-wrap">
-        <.button phx-click="update_workout">
+      <div class="flex justify-end flex-wrap gap-4">
+        <.button :if={@is_workout_owner} phx-click="update_workout">
           Update
         </.button>
 
-        <.button class="btn btn-error" phx-click="show_modal">
+        <.button :if={@is_workout_owner} class="btn btn-error" phx-click="show_modal">
           Delete
         </.button>
 
@@ -81,10 +82,19 @@ defmodule GymratWeb.WorkoutLive.Details do
     # Convert ID from URL param
     plan_id = String.to_integer(plan_id)
     workout_id = String.to_integer(workout_id)
+    user_id = socket.assigns.current_scope.user.id
+
+    isWorkoutOwner = Workouts.is_workout_from_user(workout_id, user_id)
 
     case Workouts.get_workout(workout_id) do
       {:ok, workout} ->
-        {:ok, assign(socket, plan_id: plan_id, workout: workout, show_modal: false)}
+        {:ok,
+         assign(socket,
+           plan_id: plan_id,
+           workout: workout,
+           show_modal: false,
+           is_workout_owner: isWorkoutOwner
+         )}
 
       {:error, _reason} ->
         {:error, :not_found}

@@ -25,19 +25,36 @@ defmodule GymratWeb.PlanLive.Details do
         <%= if Enum.empty?(@plan.workouts) do %>
           <p>
             No workouts created yet.
-            <a class="underline hover:text-blue-500" href={~p"/plans/#{@plan.id}/workouts/new"}>
+            <a
+              :if={@current_user_id == @plan.creator_id}
+              class="underline hover:text-blue-500"
+              href={~p"/plans/#{@plan.id}/workouts/new"}
+            >
               Create one!
             </a>
           </p>
         <% else %>
-          <.button phx-click="create_workout" class="btn btn-primary w-full">
+          <.button
+            :if={@current_user_id == @plan.creator_id}
+            phx-click="create_workout"
+            class="btn btn-primary w-full"
+          >
             Create a Workout
           </.button>
         <% end %>
       </ul>
 
-      <div class="flex justify-end flex-wrap">
-        <.button phx-click="update_plan">
+      <div class="flex justify-end flex-wrap gap-4">
+        <.button phx-click={
+          JS.push("share-plan",
+            value: %{uuid: @plan.share_token, name: @plan.name},
+            to: "#plan-actions"
+          )
+        }>
+          Share
+        </.button>
+
+        <.button :if={@current_user_id == @plan.creator_id} phx-click="update_plan">
           Update
         </.button>
 
@@ -72,13 +89,14 @@ defmodule GymratWeb.PlanLive.Details do
 
   @impl true
   def mount(%{"id" => plan_id}, _session, socket) do
+    current_user_id = socket.assigns.current_scope.user.id
     # Convert ID from URL param
     plan_id = String.to_integer(plan_id)
 
     # Fetch workouts for this plan
     case Workouts.get_plan_with_workouts(plan_id) do
       {:ok, plan} ->
-        {:ok, assign(socket, plan: plan, show_modal: false)}
+        {:ok, assign(socket, plan: plan, show_modal: false, current_user_id: current_user_id)}
 
       {:error, _reason} ->
         {:error, :not_found}
@@ -129,26 +147,52 @@ defmodule GymratWeb.PlanLive.Details do
 
   @impl true
   def handle_event("delete_plan", _payload, socket) do
-    case Plans.soft_delete_plan(socket.assigns.plan) do
-      {:ok, _} ->
-        {
-          :noreply,
-          socket
-          |> put_flash(
-            :info,
-            "The plan was deleted!"
-          )
-          |> push_navigate(to: ~p"/")
-        }
+    plan = socket.assigns.plan
+    user = socket.assigns.current_scope.user
+
+    case Plans.get_user_plan(user.id, plan.id) do
+      {:ok, user_plan} ->
+        if plan.creator_id == user.id do
+          case Plans.soft_delete_plan(plan, user_plan) do
+            {:ok, _} ->
+              {
+                :noreply,
+                socket
+                |> put_flash(:info, "The plan was deleted!")
+                |> push_navigate(to: ~p"/")
+              }
+
+            {:error, _} ->
+              {
+                :noreply,
+                socket
+                |> put_flash(:error, "Failed to delete the plan!")
+              }
+          end
+        else
+          case Plans.soft_delete_user_plan(user_plan) do
+            {:ok, _} ->
+              {
+                :noreply,
+                socket
+                |> put_flash(:info, "The plan was desassociated!")
+                |> push_navigate(to: ~p"/")
+              }
+
+            {:error, _} ->
+              {
+                :noreply,
+                socket
+                |> put_flash(:error, "Failed to desassociate the plan!")
+              }
+          end
+        end
 
       {:error, _} ->
         {
           :noreply,
           socket
-          |> put_flash(
-            :error,
-            "Failed to delete the plan!"
-          )
+          |> put_flash(:error, "Failed to find the associated plan!")
         }
     end
   end

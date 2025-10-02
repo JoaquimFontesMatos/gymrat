@@ -36,6 +36,25 @@ defmodule Gymrat.Training.Workouts do
     end
   end
 
+  def is_workout_from_user(id, user_id) do
+    query =
+      from w in Workout,
+        join: p in Plan,
+        on: p.id == w.plan_id,
+        where: w.id == ^id,
+        where: p.creator_id == ^user_id,
+        where: is_nil(w.deleted_at),
+        select: w
+
+    case Repo.one(query) do
+      %Workout{} = _ ->
+        true
+
+      nil ->
+        false
+    end
+  end
+
   def create_workout(attrs \\ %{}) do
     %Workout{}
     |> Workout.changeset(attrs)
