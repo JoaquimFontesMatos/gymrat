@@ -4,6 +4,7 @@ Hooks.Share = {
   mounted() {
     this.el.addEventListener("share-plan", (e) => {
       const { share_token, name } = e.detail;
+      console.log("Received share-plan event", e.detail);
 
       // Check if the Web Share API is supported by the browser
       if (navigator.share) {

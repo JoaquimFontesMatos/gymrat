@@ -44,10 +44,10 @@ defmodule GymratWeb.PlanLive.Details do
         <% end %>
       </ul>
 
-      <div class="flex justify-end flex-wrap gap-4">
+      <div class="flex justify-end flex-wrap gap-4" phx-hook="Share" id="plan-actions">
         <.button phx-click={
-          JS.push("share-plan",
-            value: %{uuid: @plan.share_token, name: @plan.name},
+          JS.dispatch("share-plan",
+            detail: %{share_token: @plan.share_token, name: @plan.name},
             to: "#plan-actions"
           )
         }>
