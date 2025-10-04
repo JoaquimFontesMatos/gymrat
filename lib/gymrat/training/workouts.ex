@@ -3,7 +3,7 @@ defmodule Gymrat.Training.Workouts do
   import Ecto.Changeset
 
   alias Gymrat.Repo
-  alias Gymrat.Plans.Plan
+  alias Gymrat.Plans.{Plan, UserPlans}
   alias Gymrat.Workouts.{Workout, WorkoutExercise}
 
   def list_workouts do
@@ -15,11 +15,13 @@ defmodule Gymrat.Training.Workouts do
       from w in Workout,
         join: p in Plan,
         on: w.plan_id == p.id,
+        join: up in UserPlans,
+        on: up.plan_id == p.id,
         where: w.weekday == ^weekday,
         where: is_nil(w.deleted_at),
         where: is_nil(p.deleted_at),
         where: not is_nil(w.weekday),
-        where: p.creator_id == ^user_id
+        where: up.user_id == ^user_id
     )
   end
 
