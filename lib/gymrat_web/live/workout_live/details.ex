@@ -3,13 +3,28 @@ defmodule GymratWeb.WorkoutLive.Details do
 
   alias Gymrat.Training.Workouts
 
+  defp get_localized_weekday(weekday) do
+    case weekday do
+      nil -> "No weekday"
+      1 -> "Monday"
+      2 -> "Tuesday"
+      3 -> "Wednesday"
+      4 -> "Thursday"
+      5 -> "Friday"
+      6 -> "Saturday"
+      7 -> "Sunday"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1>{@workout.name}</h1>
-
-      <ul class="list-disc pl-4">
+      <h1 class="text-2xl font-bold">{@workout.name}</h1>
+      <span class="text-gray-500">
+        {get_localized_weekday(@workout.weekday)}
+      </span>
+      <ul class="list-disc pl-4 mt-8">
         <%= for exercise <- @workout.workout_exercises do %>
           <li class="mb-2 p-2 border rounded flex justify-between items-center">
             <span>
@@ -30,7 +45,7 @@ defmodule GymratWeb.WorkoutLive.Details do
             No exercises added yet.
             <a
               :if={@is_workout_owner}
-              class="underline hover:text-blue-500"
+              class="underline hover:text-secondary"
               href={~p"/plans/#{@plan_id}/workouts/#{@workout.id}/exercises/new"}
             >
               Add one!

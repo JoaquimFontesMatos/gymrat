@@ -18,6 +18,22 @@ defmodule GymratWeb.WorkoutLive.Create do
             phx-mounted={JS.focus()}
           />
 
+          <.input
+            field={@form[:weekday]}
+            type="select"
+            label="Weekday"
+            options={[
+              {"No weekday", nil},
+              {"Monday", 1},
+              {"Tuesday", 2},
+              {"Wednesday", 3},
+              {"Thursday", 4},
+              {"Friday", 5},
+              {"Saturday", 6},
+              {"Sunday", 7}
+            ]}
+          />
+
           <.button phx-disable-with="Creating workout..." class="btn btn-primary w-full">
             Create an Workout
           </.button>

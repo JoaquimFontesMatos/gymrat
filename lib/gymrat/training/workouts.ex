@@ -10,6 +10,19 @@ defmodule Gymrat.Training.Workouts do
     Repo.all(from w in Workout, where: is_nil(w.deleted_at))
   end
 
+  def list_my_workouts_by_weekday(weekday, user_id) do
+    Repo.all(
+      from w in Workout,
+        join: p in Plan,
+        on: w.plan_id == p.id,
+        where: w.weekday == ^weekday,
+        where: is_nil(w.deleted_at),
+        where: is_nil(p.deleted_at),
+        where: not is_nil(w.weekday),
+        where: p.creator_id == ^user_id
+    )
+  end
+
   def get_plan_with_workouts(plan_id) do
     query = from p in Plan, where: p.id == ^plan_id, where: is_nil(p.deleted_at)
 

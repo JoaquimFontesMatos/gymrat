@@ -8,7 +8,7 @@ defmodule GymratWeb.ExerciseLive.Details do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1>
+      <h1 class="text-2xl font-bold">
         {@exercise.exercise_id
         |> String.replace("_", " ")
         |> String.capitalize()}
@@ -74,7 +74,7 @@ defmodule GymratWeb.ExerciseLive.Details do
             <p>
               No sets added yet.
               <a
-                class="underline hover:text-blue-500"
+                class="underline hover:text-secondary"
                 href={
                   ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@exercise.id}/sets/new"
                 }
