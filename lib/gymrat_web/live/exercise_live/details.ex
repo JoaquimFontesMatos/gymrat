@@ -3,16 +3,65 @@ defmodule GymratWeb.ExerciseLive.Details do
 
   alias Gymrat.Training.WorkoutExercises
   alias Gymrat.Training.Sets
+  alias Gymrat.ExerciseFetcher
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <h1 class="text-2xl font-bold">
-        {@exercise.exercise_id
-        |> String.replace("_", " ")
-        |> String.capitalize()}
+        {@fetched_exercise["name"]}
       </h1>
+
+      <div class="collapse bg-secondary text-secondary-content border-primary border border-4">
+        <input type="checkbox" class="peer" />
+        <div class="collapse-title font-semibold">Details</div>
+        <div class="collapse-content text-sm bg-primary text-primary-content peer-checked:bg-neutral peer-checked:text-neutral-content">
+          <div class="flex flex-col gap-4">
+            <img
+              loading="lazy"
+              src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.jpg"}
+              data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.png"}
+              data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.webp"}
+              alt="Exercise Image"
+              class="w-full h-56 object-cover"
+              onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+            />
+            <p>
+              <strong>Primary Muscles:</strong>
+              {Enum.join(List.wrap(@fetched_exercise["primaryMuscles"] || []), ", ")}
+            </p>
+            <p>
+              <strong>Secondary Muscles:</strong>
+              {Enum.join(List.wrap(@fetched_exercise["secondaryMuscles"] || []), ", ")}
+            </p>
+            <p>
+              <strong>Level:</strong>
+              <span class={"px-2 py-1 rounded "<>
+                case @fetched_exercise["level"] do
+                "beginner" -> "bg-green-200 text-green-800"
+                "intermediate" -> "bg-yellow-200 text-yellow-800"
+                "expert" -> "bg-red-200 text-red-800"
+                _ -> "bg-gray-200 text-gray-600"
+                end
+                }>
+                {@fetched_exercise["level"] || "N/A"}
+              </span>
+            </p>
+            <p><strong>Category:</strong> {@fetched_exercise["category"] || "N/A"}</p>
+            <p><strong>Equipment:</strong> {@fetched_exercise["equipment"] || "N/A"}</p>
+            <p><strong>Force:</strong> {@fetched_exercise["force"] || "N/A"}</p>
+            <div>
+              <strong>Instructions:</strong>
+              <ol class="ml-4">
+                <li :for={instruction <- @fetched_exercise["instructions"] || []} class="list-decimal">
+                  {instruction}
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="flex flex-col gap-6">
         <div class="flex flex-col md:flex-row gap-4 justify-center items-center w-full order-last md:order-first">
@@ -141,6 +190,7 @@ defmodule GymratWeb.ExerciseLive.Details do
       WorkoutExercises.is_workout_exercise_from_user(exercise_id, user.id)
 
     exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id, user.id)
+    {:ok, fetched_exercise} = ExerciseFetcher.fetch_exercise(exercise.exercise_id)
 
     daily_reps = Sets.get_set_sum_reps_by_day(exercise_id, user.id)
     # Build reps chart data
@@ -185,6 +235,7 @@ defmodule GymratWeb.ExerciseLive.Details do
        plan_id: plan_id,
        workout_id: workout_id,
        exercise: exercise,
+       fetched_exercise: fetched_exercise,
        weight_chart_data: weight_chart_data,
        reps_chart_data: reps_chart_data,
        show_modal_set: false,

@@ -82,9 +82,9 @@ defmodule GymratWeb.ExerciseLive.Add do
                     <div class="mt-2 p-2 rounded">
                       <img
                         loading="lazy"
-                        src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] ||1}/0.jpg"}
-                        data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] ||1}/0.png"}
-                        data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] ||1}/0.webp"}
+                        src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.jpg"}
+                        data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.png"}
+                        data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.webp"}
                         alt="Exercise Image"
                         class="w-full h-24 object-cover"
                         onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
