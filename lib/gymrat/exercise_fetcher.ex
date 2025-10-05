@@ -4,13 +4,12 @@ defmodule Gymrat.ExerciseFetcher do
     Application.fetch_env!(:gymrat, :rapidapi)
   end
 
-  def fetch_all_exercises do
-    url = "#{@api_base}/exercises"
+  def filter_exercises(query) do
+    url = "#{@api_base}/exercises/filter?#{query}"
     config = rapidapi_config()
 
     case Req.get(url,
            headers: [
-             # Accessing the host and key with keyword list syntax
              {"x-rapidapi-host", config[:host]},
              {"x-rapidapi-key", config[:key]}
            ]
@@ -48,33 +47,17 @@ defmodule Gymrat.ExerciseFetcher do
     end
   end
 
-  def search_exercise_by_name(query) do
-    case fetch_all_exercises() do
-      {:ok, %{"excercises_ids" => ids}} ->
-        # Transform and keep track of original IDs
-        transformed =
-          ids
-          |> Enum.map(fn id ->
-            readable =
-              id
-              |> String.replace("_", " ")
-              |> String.downcase()
+  def filter_exercises_by_name(exercises, query) do
+    query_down = String.downcase(query || "")
 
-            {id, readable}
-          end)
+    filtered =
+      exercises
+      |> Enum.filter(fn %{"name" => name} ->
+        name
+        |> String.downcase()
+        |> String.contains?(query_down)
+      end)
 
-        # Filter by search query
-        matching_ids =
-          transformed
-          |> Enum.filter(fn {_id, readable} ->
-            String.contains?(readable, String.downcase(query))
-          end)
-          |> Enum.map(fn {id, _readable} -> id end)
-
-        {:ok, %{"excercises_ids" => matching_ids}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, filtered}
   end
 end
