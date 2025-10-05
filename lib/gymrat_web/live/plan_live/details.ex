@@ -4,9 +4,14 @@ defmodule GymratWeb.PlanLive.Details do
   alias Gymrat.Training.Plans
   alias Gymrat.Training.Workouts
 
-  defp get_localized_weekday(weekday) do
+  defp get_localized_weekdays(weekdays) when is_list(weekdays) do
+    weekdays
+    |> Enum.map(&weekday_to_string(&1.weekday))
+    |> Enum.join(", ")
+  end
+
+  defp weekday_to_string(weekday) do
     case weekday do
-      nil -> "No weekday"
       1 -> "Monday"
       2 -> "Tuesday"
       3 -> "Wednesday"
@@ -14,6 +19,7 @@ defmodule GymratWeb.PlanLive.Details do
       5 -> "Friday"
       6 -> "Saturday"
       7 -> "Sunday"
+      _ -> "No weekday"
     end
   end
 
@@ -30,7 +36,7 @@ defmodule GymratWeb.PlanLive.Details do
               <span class="h-full">{workout.name}</span>
               <span class="w-px h-4 bg-secondary"></span>
               <span class="text-gray-500 text-xs h-full">
-                {get_localized_weekday(workout.weekday)}
+                {get_localized_weekdays(Workouts.get_workout_weekdays(workout.id))}
               </span>
             </div>
             <div>

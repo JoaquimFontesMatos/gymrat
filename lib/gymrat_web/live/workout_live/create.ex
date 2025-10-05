@@ -18,12 +18,14 @@ defmodule GymratWeb.WorkoutLive.Create do
             phx-mounted={JS.focus()}
           />
 
+          <label class="mt-4 text-xs text-gray-400">Days to schedule:</label>
           <.input
-            field={@form[:weekday]}
+            field={@form[:selected_weekdays]}
             type="select"
-            label="Weekday"
+            label="Weekdays"
+            class="h-32"
+            multiple
             options={[
-              {"No weekday", nil},
               {"Monday", 1},
               {"Tuesday", 2},
               {"Wednesday", 3},
@@ -32,6 +34,7 @@ defmodule GymratWeb.WorkoutLive.Create do
               {"Saturday", 6},
               {"Sunday", 7}
             ]}
+            required
           />
 
           <.button phx-disable-with="Creating workout..." class="btn btn-primary w-full">
@@ -45,42 +48,51 @@ defmodule GymratWeb.WorkoutLive.Create do
 
   @impl true
   def mount(%{"id" => plan_id}, _session, socket) do
-    changeset = Workouts.change_workout_map(%{})
+    changeset = Workouts.change_workout_map(%{selected_weekdays: []})
     plan_id = String.to_integer(plan_id)
 
     socket =
       socket
-      # Call your helper function to assign :form
       |> assign_form(changeset)
-      # Assign the plan_id to the socket as @plan_id
       |> assign(plan_id: plan_id)
 
-    # temporary_assigns should typically be for specific LiveView cases
     {:ok, socket, temporary_assigns: [form: nil]}
   end
 
   @impl true
   def handle_event("save", %{"workout" => workout_params}, socket) do
+    weekdays = Map.get(workout_params, "selected_weekdays", [])
+
+    normalized_weekdays =
+      if(is_nil(weekdays), do: [], else: weekdays)
+      |> Enum.map(&String.to_integer/1)
+
     workout_params = Map.put(workout_params, "plan_id", socket.assigns.plan_id)
 
-    case Workouts.create_workout(workout_params) do
+    workout_params = Map.delete(workout_params, "selected_weekdays")
+
+    case Workouts.create_workout_with_weekdays(workout_params, normalized_weekdays) do
       {:ok, _} ->
-        {
-          :noreply,
-          socket
-          |> put_flash(
-            :info,
-            "The workout was created!"
-          )
-          |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}")
-        }
+        {:noreply,
+         socket
+         |> put_flash(:info, "The workout was created!")
+         |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = Ecto.Changeset.put_change(changeset, :selected_weekdays, normalized_weekdays)
         {:noreply, assign_form(socket, changeset)}
     end
   end
 
   def handle_event("validate", %{"workout" => workout_params}, socket) do
+    weekdays = Map.get(workout_params, "selected_weekdays", [])
+
+    normalized_weekdays =
+      if(is_nil(weekdays), do: [], else: weekdays)
+      |> Enum.map(&String.to_integer/1)
+
+    workout_params = Map.put(workout_params, "selected_weekdays", normalized_weekdays)
+
     changeset = Workouts.change_workout_map(workout_params)
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end

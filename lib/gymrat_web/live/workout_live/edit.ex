@@ -18,12 +18,13 @@ defmodule GymratWeb.WorkoutLive.Edit do
             phx-mounted={JS.focus()}
           />
 
+          <label class="mt-4 text-xs text-gray-400">Days to schedule:</label>
           <.input
-            field={@form[:weekday]}
+            field={@form[:selected_weekdays]}
             type="select"
-            label="Weekday"
+            class="h-32"
+            multiple
             options={[
-              {"No weekday", nil},
               {"Monday", 1},
               {"Tuesday", 2},
               {"Wednesday", 3},
@@ -32,6 +33,7 @@ defmodule GymratWeb.WorkoutLive.Edit do
               {"Saturday", 6},
               {"Sunday", 7}
             ]}
+            required
           />
 
           <.button phx-disable-with="Updating workout..." class="btn btn-primary w-full">
@@ -48,11 +50,16 @@ defmodule GymratWeb.WorkoutLive.Edit do
     plan_id = String.to_integer(plan_id)
     workout_id = String.to_integer(workout_id)
 
-    fetched_workout = Workouts.get_workout(workout_id)
-
-    case fetched_workout do
+    case Workouts.get_workout(workout_id) do
       {:ok, workout} ->
-        changeset = Workouts.change_workout(workout)
+        # ❌ FIX: map the list of WorkoutWeekday structs to a list of integers
+        current_weekday_structs = Workouts.get_workout_weekdays(workout.id)
+        current_weekdays = Enum.map(current_weekday_structs, & &1.weekday)
+
+        initial_attrs =
+          Map.put(workout |> Map.from_struct(), :selected_weekdays, current_weekdays)
+
+        changeset = Workouts.change_workout(workout, initial_attrs)
 
         socket =
           socket
@@ -66,31 +73,43 @@ defmodule GymratWeb.WorkoutLive.Edit do
     end
   end
 
+  # ... handle_event("save", ...) and other functions are correct ...
   @impl true
   def handle_event("save", %{"workout" => workout_params}, socket) do
     workout = socket.assigns.workout
 
-    case Workouts.update_workout(workout, workout_params) do
+    weekdays = Map.get(workout_params, "selected_weekdays", [])
+
+    normalized_weekdays =
+      if(is_nil(weekdays), do: [], else: weekdays)
+      |> Enum.map(&String.to_integer/1)
+
+    workout_params = Map.delete(workout_params, "selected_weekdays")
+
+    case Workouts.update_workout_with_weekdays(workout, workout_params, normalized_weekdays) do
       {:ok, updated_workout} ->
-        {
-          :noreply,
-          socket
-          |> put_flash(
-            :info,
-            "The workout was updated!"
-          )
-          |> push_navigate(
-            to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{updated_workout.id}"
-          )
-        }
+        {:noreply,
+         socket
+         |> put_flash(:info, "The workout was updated!")
+         |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{updated_workout.id}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = Ecto.Changeset.put_change(changeset, :selected_weekdays, normalized_weekdays)
         {:noreply, assign_form(socket, changeset)}
     end
   end
 
   def handle_event("validate", %{"workout" => workout_params}, socket) do
     workout = socket.assigns.workout
+
+    weekdays = Map.get(workout_params, "selected_weekdays", [])
+
+    normalized_weekdays =
+      if(is_nil(weekdays), do: [], else: weekdays)
+      |> Enum.map(&String.to_integer/1)
+
+    workout_params = Map.put(workout_params, "selected_weekdays", normalized_weekdays)
+
     changeset = Workouts.change_workout(workout, workout_params)
 
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}

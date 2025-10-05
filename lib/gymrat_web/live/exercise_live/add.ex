@@ -186,7 +186,6 @@ defmodule GymratWeb.ExerciseLive.Add do
           if name != "" do
             case ExerciseFetcher.filter_exercises_by_name(exercises, name) do
               {:ok, filtered} -> filtered
-              {:error, _} -> []
             end
           else
             exercises
