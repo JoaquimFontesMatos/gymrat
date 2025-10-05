@@ -37,6 +37,7 @@ Hooks.Chart = {
     import("chart.js/auto").then(({ default: Chart }) => {
       const data = JSON.parse(this.el.dataset.chart);
       const ctx = this.el.getContext("2d");
+      const yAxisTitle = this.el.dataset.yAxisTitle || "Value";
 
       this.chart = new Chart(ctx, {
         type: "line",
@@ -49,7 +50,7 @@ Hooks.Chart = {
           scales: {
             y: {
               beginAtZero: true,
-              title: { display: true, text: "Weight (kg)" },
+              title: { display: true, text: yAxisTitle },
             },
             x: { title: { display: true, text: "Time" } },
           },

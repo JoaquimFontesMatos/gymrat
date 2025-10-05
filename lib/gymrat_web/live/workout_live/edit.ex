@@ -22,7 +22,7 @@ defmodule GymratWeb.WorkoutLive.Edit do
           <.input
             field={@form[:selected_weekdays]}
             type="select"
-            class="h-32"
+            class="select w-full"
             multiple
             options={[
               {"Monday", 1},

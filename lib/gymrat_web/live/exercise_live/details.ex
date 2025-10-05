@@ -70,6 +70,7 @@ defmodule GymratWeb.ExerciseLive.Details do
               id="repsProgressChart"
               phx-hook="Chart"
               data-chart={Jason.encode!(@reps_chart_data)}
+              data-y-axis-title="Reps"
             >
             </canvas>
           </div>
@@ -78,6 +79,7 @@ defmodule GymratWeb.ExerciseLive.Details do
               id="weightProgressChart"
               phx-hook="Chart"
               data-chart={Jason.encode!(@weight_chart_data)}
+              data-y-axis-title="Weight (kg)"
             >
             </canvas>
           </div>
@@ -206,7 +208,7 @@ defmodule GymratWeb.ExerciseLive.Details do
       labels: reps_labels,
       datasets: [
         %{
-          label: "Daily Reps Volume (kg)",
+          label: "Daily Reps Volume",
           data: reps_data,
           borderColor: "rgb(59, 130, 246)",
           backgroundColor: "rgba(59, 130, 246, 0.2)",

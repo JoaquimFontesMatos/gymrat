@@ -23,7 +23,7 @@ defmodule GymratWeb.WorkoutLive.Create do
             field={@form[:selected_weekdays]}
             type="select"
             label="Weekdays"
-            class="h-32"
+            class="select w-full"
             multiple
             options={[
               {"Monday", 1},
