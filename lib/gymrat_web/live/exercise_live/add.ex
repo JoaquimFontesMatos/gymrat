@@ -37,6 +37,7 @@ defmodule GymratWeb.ExerciseLive.Add do
             placeholder="e.g., biceps, triceps, bench press"
             phx-debounce="300"
           />
+
           <.input
             field={@search_form[:muscle_group]}
             type="select"
