@@ -30,38 +30,42 @@ defmodule GymratWeb.ExerciseLive.Add do
       <div class="mx-auto max-w-2xl px-4 py-8">
         <h1 class="text-3xl font-bold mb-6">Exercises Database</h1>
         <.form for={@search_form} id="search_form" phx-submit="search" phx-change="search_validate">
-          <.input
-            field={@search_form[:name]}
-            type="search"
-            label="Search Exercises"
-            placeholder="e.g., biceps, triceps, bench press"
-            phx-debounce="300"
-          />
+          <div class="join">
+            <.input
+              field={@search_form[:name]}
+              type="search"
+              class="input join-item"
+              label="Search Exercise"
+              placeholder="e.g., biceps, triceps, bench press"
+              phx-debounce="300"
+            />
+            <.input
+              field={@search_form[:muscle_group]}
+              type="select"
+              class="select join-item"
+              label="Muscle Group"
+              options={[
+                {"All", ""},
+                {"Quadriceps", "quadriceps"},
+                {"Shoulders", "shoulders"},
+                {"Abdominals", "abdominals"},
+                {"Chest", "chest"},
+                {"Hamstrings", "hamstrings"},
+                {"Triceps", "triceps"},
+                {"Biceps", "biceps"},
+                {"Lats", "lats"},
+                {"Middle Back", "middle_back"},
+                {"Forearms", "forearms"},
+                {"Glutes", "glutes"},
+                {"Traps", "traps"},
+                {"Adductors", "adductors"},
+                {"Abductors", "abductors"},
+                {"Neck", "neck"}
+              ]}
+            />
+          </div>
 
-          <.input
-            field={@search_form[:muscle_group]}
-            type="select"
-            label="Muscle Group"
-            options={[
-              {"All", ""},
-              {"Quadriceps", "quadriceps"},
-              {"Shoulders", "shoulders"},
-              {"Abdominals", "abdominals"},
-              {"Chest", "chest"},
-              {"Hamstrings", "hamstrings"},
-              {"Triceps", "triceps"},
-              {"Biceps", "biceps"},
-              {"Lats", "lats"},
-              {"Middle Back", "middle_back"},
-              {"Forearms", "forearms"},
-              {"Glutes", "glutes"},
-              {"Traps", "traps"},
-              {"Adductors", "adductors"},
-              {"Abductors", "abductors"},
-              {"Neck", "neck"}
-            ]}
-          />
-          <.button type="submit" class="btn btn-primary ml-2">Search</.button>
+          <.button type="submit" class="btn btn-primary">Search</.button>
         </.form>
 
         <%= if @loading do %>
