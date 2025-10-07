@@ -24,7 +24,7 @@ defmodule GymratWeb.Endpoint do
     at: "/",
     from: :gymrat,
     gzip: not code_reloading?,
-    only: GymratWeb.static_paths()
+    #only: GymratWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
