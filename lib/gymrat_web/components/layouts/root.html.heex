@@ -7,12 +7,14 @@
     <.live_title default="Gymrat" suffix=" · Phoenix Framework">
       {assigns[:page_title]}
     </.live_title>
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1f2937" />
-    <link rel="icon" href="/icons/icon-192.png" />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
+
+    <link rel="manifest" href={~p"/manifest.json"} />
+    <meta name="theme-color" content="#1f2937" />
+    <link rel="icon" href={~p"/images/icons/icon-192x192.png"} />
+    <link rel="apple-touch-icon" href={~p"/images/icons/icon-192x192.png"} />
     <script>
       (() => {
         const setTheme = (theme) => {
