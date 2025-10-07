@@ -2,7 +2,7 @@
   "name": "Gymrat",
   "short_name": "Gymrat",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#1f2937",
   "orientation": "portrait",
