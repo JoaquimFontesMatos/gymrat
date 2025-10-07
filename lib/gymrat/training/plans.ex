@@ -88,21 +88,6 @@ defmodule Gymrat.Training.Plans do
     end)
   end
 
-  defp insert_with_retry(fun, attempts \\ 3) do
-    case fun.() do
-      {:ok, result} ->
-        {:ok, result}
-
-      {:error, %Ecto.Changeset{constraints: [_ | _]} = _error} when attempts > 0 ->
-        # Regenerate token implicitly via new changeset
-        insert_with_retry(fun, attempts - 1)
-
-      # This catches non-changeset errors too
-      error ->
-        error
-    end
-  end
-
   def update_plan(%Plan{} = plan, attrs) do
     plan
     |> Plan.changeset(attrs)

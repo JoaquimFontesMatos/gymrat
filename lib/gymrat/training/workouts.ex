@@ -22,6 +22,7 @@ defmodule Gymrat.Training.Workouts do
         where: ww.weekday == ^weekday,
         where: is_nil(w.deleted_at),
         where: is_nil(p.deleted_at),
+        where: is_nil(up.deleted_at),
         where: not is_nil(ww.weekday),
         where: up.user_id == ^user_id
     )
