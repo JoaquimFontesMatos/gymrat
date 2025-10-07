@@ -23,8 +23,9 @@ defmodule GymratWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :gymrat,
-    gzip: not code_reloading?,
-    #only: GymratWeb.static_paths()
+    gzip: not code_reloading?
+
+  # only: GymratWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
