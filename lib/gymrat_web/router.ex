@@ -73,6 +73,10 @@ defmodule GymratWeb.Router do
            SetLive.Edit,
            :edit_set
 
+      live "/weights", WeightLive.Details, :weight_details
+      live "/weights/new", WeightLive.Create, :new_weight
+      live "/weights/:id/edit", WeightLive.Edit, :edit_weight
+
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
