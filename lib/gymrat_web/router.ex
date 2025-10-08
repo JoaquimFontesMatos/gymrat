@@ -11,6 +11,11 @@ defmodule GymratWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_scope_for_user
+    plug :put_current_path
+  end
+
+  defp put_current_path(conn, _opts) do
+    assign(conn, :current_path, conn.request_path)
   end
 
   pipeline :api do

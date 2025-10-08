@@ -54,14 +54,20 @@
       <% end %>
     </ul>
     <div class="dock">
-      <a href={~p"/"} class="dock-active">
+      <a
+        href={~p"/"}
+        class={if @current_path == "/", do: "dock-active  text-secondary", else: ""}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="size-6"
+          class={"size-6 " <>
+            if @current_path == "/",
+              do: "stroke-primary" , else: ""
+          }
         >
           <path
             stroke-linecap="round"
@@ -72,14 +78,25 @@
         <span class="dock-label">Home</span>
       </a>
 
-      <a href={~p"/weights"}>
+      <a
+        href={~p"/weights"}
+        class={
+          if String.equivalent?(@current_path, "/weights"),
+            do: "dock-active text-secondary",
+            else: ""
+        }
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="size-6"
+          class={"size-6 " <>
+            if String.equivalent?(@current_path, "/weights"),
+              do: "stroke-primary",
+              else: ""
+          }
         >
           <path
             stroke-linecap="round"
@@ -98,7 +115,11 @@
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="size-12 dock-label"
+          class={"size-12 dock-label " <>
+            if String.equivalent?(@current_path, "/plans/new"),
+              do: "stroke-primary fill-secondary/20",
+              else: ""
+            }
         >
           <path
             stroke-linecap="round"
@@ -108,14 +129,27 @@
         </svg>
       </a>
 
-      <a disabled href={~p"/"}>
+      <a
+        disabled
+        href={~p"/"}
+        class={
+          if String.equivalent?(@current_path, "/user"),
+            do: "dock-active text-secondary",
+            else: ""
+        }
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="size-6"
+          class={"size-6 " <>
+            if String.equivalent?(@current_path, "/user"),
+              do: "stroke-primary",
+              else: ""
+            }
+          }
         >
           <path
             stroke-linecap="round"
@@ -127,14 +161,25 @@
         <span class="dock-label">User</span>
       </a>
 
-      <a href={~p"/users/settings"}>
+      <a
+        href={~p"/users/settings"}
+        class={
+          if String.equivalent?(@current_path, "/users/settings"),
+            do: "dock-active text-secondary",
+            else: ""
+        }
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="size-6"
+          class={"size-6 " <>
+            if String.equivalent?(@current_path, "/users/settings"),
+              do: "stroke-primary",
+              else: ""
+          }
         >
           <path
             stroke-linecap="round"
