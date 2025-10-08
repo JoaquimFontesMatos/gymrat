@@ -49,6 +49,11 @@ Hooks.Chart = {
         type: "line",
         data: data,
         options: {
+          segment: {
+            borderDash: (ctx) =>
+              ctx.p0.skip || ctx.p1.skip ? [6, 6] : undefined,
+          },
+          spanGaps: true,
           responsive: true,
           plugins: {
             legend: { display: true },
