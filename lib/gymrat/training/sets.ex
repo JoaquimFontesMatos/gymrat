@@ -81,6 +81,23 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
+  def get_sets_weight_by_day(workout_exercise_id, user_id) do
+    from(s in Set,
+      join: we in assoc(s, :workout_exercise),
+      where: we.id == ^workout_exercise_id,
+      where: is_nil(we.deleted_at),
+      where: is_nil(s.deleted_at),
+      where: s.user_id == ^user_id,
+      select: %{
+        day: fragment("date(?)", s.inserted_at),
+        inserted_at: s.inserted_at,
+        weight: s.weight
+      },
+      order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
+    )
+    |> Repo.all()
+  end
+
   def get_set_sum_reps_by_day(workout_exercise_id, user_id) do
     from(s in Set,
       join: we in assoc(s, :workout_exercise),
@@ -94,6 +111,23 @@ defmodule Gymrat.Training.Sets do
         total_reps: sum(s.reps)
       },
       order_by: fragment("date(?)", s.inserted_at)
+    )
+    |> Repo.all()
+  end
+
+  def get_sets_reps_by_day(workout_exercise_id, user_id) do
+    from(s in Set,
+      join: we in assoc(s, :workout_exercise),
+      where: we.id == ^workout_exercise_id,
+      where: is_nil(we.deleted_at),
+      where: is_nil(s.deleted_at),
+      where: s.user_id == ^user_id,
+      select: %{
+        day: fragment("date(?)", s.inserted_at),
+        inserted_at: s.inserted_at,
+        reps: s.reps
+      },
+      order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
     )
     |> Repo.all()
   end

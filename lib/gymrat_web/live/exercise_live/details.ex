@@ -194,42 +194,103 @@ defmodule GymratWeb.ExerciseLive.Details do
     exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id, user.id)
     {:ok, fetched_exercise} = ExerciseFetcher.fetch_exercise(exercise.exercise_id)
 
-    daily_reps = Sets.get_set_sum_reps_by_day(exercise_id, user.id)
-    # Build reps chart data
-    reps_labels = Enum.map(daily_reps, &Calendar.strftime(&1.day, "%d-%m-%y"))
-    reps_data = Enum.map(daily_reps, & &1.total_reps)
+    colors = [
+      # red
+      %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
+      # green
+      %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"},
+      # blue
+      %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
+      # yellow
+      %{border: "rgba(234, 179, 8, 0.7)", background: "rgba(234, 179, 8, 0.2)"},
+      # purple
+      %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"}
+    ]
 
-    daily_weight = Sets.get_set_sum_weight_by_day(exercise_id, user.id)
-    # Build weight chart data
-    weight_labels = Enum.map(daily_weight, &Calendar.strftime(&1.day, "%d-%m-%y"))
-    weight_data = Enum.map(daily_weight, & &1.total_weight)
+    weight_by_day = Sets.get_sets_weight_by_day(exercise_id, user.id)
 
-    reps_chart_data = %{
-      labels: reps_labels,
-      datasets: [
+    # Group sets by day
+    grouped_weight_by_day = Enum.group_by(weight_by_day, & &1.day)
+
+    # Assign index to each set per day
+    indexed_weight_sets =
+      grouped_weight_by_day
+      |> Enum.flat_map(fn {day, sets} ->
+        Enum.with_index(sets, fn set, idx ->
+          %{day: day, index: idx, weight: set.weight}
+        end)
+      end)
+
+    # Group by set index
+    grouped_weight_by_index = Enum.group_by(indexed_weight_sets, & &1.index)
+    weight_raw_days = grouped_weight_by_day |> Map.keys() |> Enum.sort()
+    weight_labels = Enum.map(weight_raw_days, &Calendar.strftime(&1, "%d-%m-%y"))
+
+    weight_datasets =
+      Enum.map(grouped_weight_by_index, fn {index, sets} ->
+        weights_by_day = Map.new(sets, fn %{day: day, weight: weight} -> {day, weight} end)
+        # fallback to last color if index exceeds
+        color = Enum.at(colors, index, List.last(colors))
+
         %{
-          label: "Daily Reps Volume",
-          data: reps_data,
-          borderColor: "rgb(59, 130, 246)",
-          backgroundColor: "rgba(59, 130, 246, 0.2)",
-          fill: true,
+          label: "Set #{index + 1}",
+          data:
+            Enum.map(weight_raw_days, fn day ->
+              Map.get(weights_by_day, day, nil)
+            end),
+          borderColor: color.border,
+          backgroundColor: color.background,
+          fill: false,
           tension: 0.3
         }
-      ]
-    }
+      end)
 
     weight_chart_data = %{
       labels: weight_labels,
-      datasets: [
+      datasets: weight_datasets
+    }
+
+    reps_by_day = Sets.get_sets_reps_by_day(exercise_id, user.id)
+
+    # Group sets by day
+    grouped_reps_by_day = Enum.group_by(reps_by_day, & &1.day)
+
+    # Assign index to each set per day
+    indexed_reps_sets =
+      grouped_reps_by_day
+      |> Enum.flat_map(fn {day, sets} ->
+        Enum.with_index(sets, fn set, idx ->
+          %{day: day, index: idx, reps: set.reps}
+        end)
+      end)
+
+    # Group by set index
+    grouped_reps_by_index = Enum.group_by(indexed_reps_sets, & &1.index)
+    reps_raw_days = grouped_reps_by_day |> Map.keys() |> Enum.sort()
+    reps_labels = Enum.map(reps_raw_days, &Calendar.strftime(&1, "%d-%m-%y"))
+
+    reps_datasets =
+      Enum.map(grouped_reps_by_index, fn {index, sets} ->
+        reps_by_day = Map.new(sets, fn %{day: day, reps: reps} -> {day, reps} end)
+        # fallback to last color if index exceeds
+        color = Enum.at(colors, index, List.last(colors))
+
         %{
-          label: "Daily Weight Volume (kg)",
-          data: weight_data,
-          borderColor: "rgb(59, 130, 246)",
-          backgroundColor: "rgba(59, 130, 246, 0.2)",
-          fill: true,
+          label: "Set #{index + 1}",
+          data:
+            Enum.map(reps_raw_days, fn day ->
+              Map.get(reps_by_day, day, nil)
+            end),
+          borderColor: color.border,
+          backgroundColor: color.background,
+          fill: false,
           tension: 0.3
         }
-      ]
+      end)
+
+    reps_chart_data = %{
+      labels: reps_labels,
+      datasets: reps_datasets
     }
 
     {:ok,
