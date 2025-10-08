@@ -5,6 +5,19 @@ defmodule GymratWeb.ExerciseLive.Details do
   alias Gymrat.Training.Sets
   alias Gymrat.ExerciseFetcher
 
+  @colors [
+    # red
+    %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
+    # green
+    %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"},
+    # blue
+    %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
+    # yellow
+    %{border: "rgba(234, 179, 8, 0.7)", background: "rgba(234, 179, 8, 0.2)"},
+    # purple
+    %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"}
+  ]
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -64,9 +77,14 @@ defmodule GymratWeb.ExerciseLive.Details do
       </div>
 
       <div class="flex flex-col gap-6">
-        <div class="flex flex-col md:flex-row gap-4 justify-center items-center w-full order-last md:order-first">
+        <div
+          id="chart-loader"
+          phx-hook="ChartLoader"
+          class="flex flex-col md:flex-row gap-4 justify-center items-center w-full order-last md:order-first"
+        >
           <div>
             <canvas
+              :if={@reps_chart_data}
               id="repsProgressChart"
               phx-hook="Chart"
               data-chart={Jason.encode!(@reps_chart_data)}
@@ -76,6 +94,7 @@ defmodule GymratWeb.ExerciseLive.Details do
           </div>
           <div>
             <canvas
+              :if={@weight_chart_data}
               id="weightProgressChart"
               phx-hook="Chart"
               data-chart={Jason.encode!(@weight_chart_data)}
@@ -194,20 +213,22 @@ defmodule GymratWeb.ExerciseLive.Details do
     exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id, user.id)
     {:ok, fetched_exercise} = ExerciseFetcher.fetch_exercise(exercise.exercise_id)
 
-    colors = [
-      # red
-      %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
-      # green
-      %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"},
-      # blue
-      %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
-      # yellow
-      %{border: "rgba(234, 179, 8, 0.7)", background: "rgba(234, 179, 8, 0.2)"},
-      # purple
-      %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"}
-    ]
+    {:ok,
+     socket
+     |> assign(:plan_id, plan_id)
+     |> assign(:workout_id, workout_id)
+     |> assign(:exercise, exercise)
+     |> assign(:fetched_exercise, fetched_exercise)
+     |> assign(:show_modal_set, false)
+     |> assign(:show_modal_exercise, false)
+     |> assign(:is_workout_exercise_from_user, is_workout_exercise_from_user)
+     |> assign(:weight_chart_data, nil)
+     |> assign(:reps_chart_data, nil)
+     |> push_event("load_chart_data", %{})}
+  end
 
-    weight_by_day = Sets.get_sets_weight_by_day(exercise_id, user.id)
+  defp build_weight_chart_data(exercise_id, user_id) do
+    weight_by_day = Sets.get_sets_weight_by_day(exercise_id, user_id)
 
     # Group sets by day
     grouped_weight_by_day = Enum.group_by(weight_by_day, & &1.day)
@@ -230,7 +251,7 @@ defmodule GymratWeb.ExerciseLive.Details do
       Enum.map(grouped_weight_by_index, fn {index, sets} ->
         weights_by_day = Map.new(sets, fn %{day: day, weight: weight} -> {day, weight} end)
         # fallback to last color if index exceeds
-        color = Enum.at(colors, index, List.last(colors))
+        color = Enum.at(@colors, index, List.last(@colors))
 
         %{
           label: "Set #{index + 1}",
@@ -245,12 +266,14 @@ defmodule GymratWeb.ExerciseLive.Details do
         }
       end)
 
-    weight_chart_data = %{
+    %{
       labels: weight_labels,
       datasets: weight_datasets
     }
+  end
 
-    reps_by_day = Sets.get_sets_reps_by_day(exercise_id, user.id)
+  defp build_reps_chart_data(exercise_id, user_id) do
+    reps_by_day = Sets.get_sets_reps_by_day(exercise_id, user_id)
 
     # Group sets by day
     grouped_reps_by_day = Enum.group_by(reps_by_day, & &1.day)
@@ -273,7 +296,7 @@ defmodule GymratWeb.ExerciseLive.Details do
       Enum.map(grouped_reps_by_index, fn {index, sets} ->
         reps_by_day = Map.new(sets, fn %{day: day, reps: reps} -> {day, reps} end)
         # fallback to last color if index exceeds
-        color = Enum.at(colors, index, List.last(colors))
+        color = Enum.at(@colors, index, List.last(@colors))
 
         %{
           label: "Set #{index + 1}",
@@ -288,23 +311,24 @@ defmodule GymratWeb.ExerciseLive.Details do
         }
       end)
 
-    reps_chart_data = %{
+    %{
       labels: reps_labels,
       datasets: reps_datasets
     }
+  end
 
-    {:ok,
-     assign(socket,
-       plan_id: plan_id,
-       workout_id: workout_id,
-       exercise: exercise,
-       fetched_exercise: fetched_exercise,
-       weight_chart_data: weight_chart_data,
-       reps_chart_data: reps_chart_data,
-       show_modal_set: false,
-       show_modal_exercise: false,
-       is_workout_exercise_from_user: is_workout_exercise_from_user
-     )}
+  @impl true
+  def handle_event("load_chart_data", _params, socket) do
+    user = socket.assigns.current_scope.user
+    exercise_id = socket.assigns.exercise.id
+
+    weight_chart_data = build_weight_chart_data(exercise_id, user.id)
+    reps_chart_data = build_reps_chart_data(exercise_id, user.id)
+
+    {:noreply,
+     socket
+     |> assign(:weight_chart_data, weight_chart_data)
+     |> assign(:reps_chart_data, reps_chart_data)}
   end
 
   @impl true

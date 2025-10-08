@@ -1,5 +1,11 @@
 let Hooks = {};
 
+Hooks.ChartLoader = {
+  mounted() {
+    this.pushEvent("load_chart_data", {});
+  },
+};
+
 Hooks.Share = {
   mounted() {
     this.el.addEventListener("share-plan", (e) => {
