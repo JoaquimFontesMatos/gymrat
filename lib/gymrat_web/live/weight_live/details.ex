@@ -70,17 +70,17 @@ defmodule GymratWeb.WeightLive.Details do
 
           <%= if Enum.empty?(@weights) do %>
             <p>
-              No weights added yet.
+              No weight measurement was saved today.
               <a
                 class="underline hover:text-secondary"
                 href={~p"/weights/new"}
               >
-                Add one!
+                Save one!
               </a>
             </p>
           <% else %>
             <.button phx-click="add_weight" class="btn btn-primary w-full">
-              Add a Weight
+              Save another
             </.button>
           <% end %>
         </ul>
