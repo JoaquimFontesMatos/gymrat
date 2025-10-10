@@ -132,6 +132,21 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
+  def get_weekly_training_volume() do
+    query =
+      from s in Set,
+        where: is_nil(s.deleted_at),
+        where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"),
+        group_by: s.user_id,
+        select: %{
+          user_id: s.user_id,
+          current_week_volume: sum(s.reps * s.weight)
+        },
+        order_by: [asc: sum(s.reps * s.weight)]
+
+    Repo.all(query)
+  end
+
   def create_set(attrs \\ %{}) do
     %Set{}
     |> Set.changeset(attrs)
