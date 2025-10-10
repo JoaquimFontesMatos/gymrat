@@ -25,14 +25,14 @@ defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
           <tbody>
             <%= for {user_volume, index} <- Enum.with_index( @weekly_volume) do %>
               <tr class={"size-5 " <> case index do
-                0 -> "bg-yellow-600/5"
-                1 -> "bg-slate-600/5"
-                2 -> "bg-amber-900/5"
+                0 -> "text-yellow-500 bg-yellow-600/15"
+                1 -> "text-slate-500 bg-slate-600/15"
+                2 -> "text-amber-800 bg-amber-900/15"
                 _->""
               end}>
                 <th>{index + 1}</th>
                 <td>{user_volume.user.name}</td>
-                <td>{user_volume.current_week_volume} kg</td>
+                <td>{format_volume(user_volume.current_week_volume)} kg</td>
                 <%= if index < 3 do %>
                   <td>
                     <svg
@@ -77,4 +77,13 @@ defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
      socket
      |> assign(:weekly_volume, weekly_volume)}
   end
+
+  defp format_volume(volume) when is_struct(volume, Decimal) do
+    # You can customize the precision and other options here.
+    # :strip_trailing_zeros will remove .00 if it's a whole number.
+    Decimal.to_string(volume, :strip_trailing_zeros)
+  end
+
+  # Fallback for other types, though it should ideally be Decimal
+  defp format_volume(volume), do: to_string(volume)
 end
