@@ -135,14 +135,20 @@ defmodule Gymrat.Training.Sets do
   def get_weekly_training_volume() do
     query =
       from s in Set,
+        join: u in assoc(s, :user),
         where: is_nil(s.deleted_at),
         where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"),
-        group_by: s.user_id,
+        group_by: u.id,
         select: %{
-          user_id: s.user_id,
+          user: %{
+            id: u.id,
+            name: u.name,
+            color: u.color
+          },
           current_week_volume: sum(s.reps * s.weight)
         },
-        order_by: [asc: sum(s.reps * s.weight)]
+        order_by: [asc: sum(s.reps * s.weight)],
+        limit: 50
 
     Repo.all(query)
   end
