@@ -147,7 +147,7 @@ defmodule Gymrat.Training.Sets do
           },
           current_week_volume: sum(s.reps * s.weight)
         },
-        order_by: [asc: sum(s.reps * s.weight)],
+        order_by: [desc: sum(s.reps * s.weight)],
         limit: 50
 
     Repo.all(query)
