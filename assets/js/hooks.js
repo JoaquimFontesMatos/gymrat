@@ -60,9 +60,10 @@ Hooks.Chart = {
           },
           scales: {
             y: {
-              beginAtZero: true,
               title: { display: true, text: yAxisTitle },
+              grace: "10%",
             },
+
             x: { title: { display: true, text: "Time" } },
           },
         },
