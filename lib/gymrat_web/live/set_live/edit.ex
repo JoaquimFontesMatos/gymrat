@@ -7,6 +7,8 @@ defmodule GymratWeb.SetLive.Edit do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Update Set</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="set_form" phx-submit="save" phx-change="validate">
           <.input

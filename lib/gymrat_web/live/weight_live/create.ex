@@ -7,6 +7,8 @@ defmodule GymratWeb.WeightLive.Create do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Add Measurement</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="weight_form" phx-submit="save" phx-change="validate">
           <.input
@@ -18,8 +20,8 @@ defmodule GymratWeb.WeightLive.Create do
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Creating Weight..." class="btn btn-primary w-full">
-            Add Weight
+          <.button phx-disable-with="Creating Measurement..." class="btn btn-primary w-full">
+            Add Measurement
           </.button>
         </.form>
       </div>
@@ -57,7 +59,7 @@ defmodule GymratWeb.WeightLive.Create do
           socket
           |> put_flash(
             :info,
-            "The weight was recorded!"
+            "The measurement was created!"
           )
           |> push_navigate(to: ~p"/weights")
         }

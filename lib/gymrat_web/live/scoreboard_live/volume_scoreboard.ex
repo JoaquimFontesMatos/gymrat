@@ -32,7 +32,7 @@ defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
               end}>
                 <th>{index + 1}</th>
                 <td>{user_volume.user.name}</td>
-                <td>{format_volume(user_volume.current_week_volume)} kg</td>
+                <td>{user_volume.current_week_volume} kg</td>
                 <%= if index < 3 do %>
                   <td>
                     <svg
@@ -77,13 +77,4 @@ defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
      socket
      |> assign(:weekly_volume, weekly_volume)}
   end
-
-  defp format_volume(volume) when is_struct(volume, Decimal) do
-    # You can customize the precision and other options here.
-    # :strip_trailing_zeros will remove .00 if it's a whole number.
-    Decimal.to_string(volume, :strip_trailing_zeros)
-  end
-
-  # Fallback for other types, though it should ideally be Decimal
-  defp format_volume(volume), do: to_string(volume)
 end

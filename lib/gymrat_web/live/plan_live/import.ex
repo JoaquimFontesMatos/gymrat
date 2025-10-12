@@ -8,6 +8,8 @@ defmodule GymratWeb.PlanLive.Import do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Import a Plan</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="import_plan_form" phx-submit="import">
           <.input

@@ -7,6 +7,8 @@ defmodule GymratWeb.WorkoutLive.Create do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Add Workout</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="workout_form" phx-submit="save" phx-change="validate">
           <.input

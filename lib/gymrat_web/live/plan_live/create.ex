@@ -7,6 +7,8 @@ defmodule GymratWeb.PlanLive.Create do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Add or Import a Plan</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="plan_form" phx-submit="save" phx-change="validate">
           <.input
@@ -18,9 +20,16 @@ defmodule GymratWeb.PlanLive.Create do
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Creating plan..." class="btn btn-primary w-full">
-            Create a Plan
-          </.button>
+          <div class="flex w-full flex-col">
+            <.button phx-disable-with="Creating plan..." class="btn btn-primary w-full">
+              Create a Plan
+            </.button>
+            
+            <div class="divider">OR</div>
+            <.button phx-click="import_plan" class="btn w-full mt-4">
+              Import a Plan
+            </.button>
+          </div>
         </.form>
       </div>
     </Layouts.app>
@@ -56,6 +65,15 @@ defmodule GymratWeb.PlanLive.Create do
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}
     end
+  end
+
+  @impl true
+  def handle_event("import_plan", _payload, socket) do
+    {
+      :noreply,
+      socket
+      |> push_navigate(to: ~p"/plans/import")
+    }
   end
 
   def handle_event("validate", %{"plan" => plan_params}, socket) do

@@ -7,6 +7,8 @@ defmodule GymratWeb.WeightLive.Edit do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <h1 class="text-2xl font-bold">Update Measurement</h1>
+
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="weight_form" phx-submit="save" phx-change="validate">
           <.input
@@ -18,8 +20,8 @@ defmodule GymratWeb.WeightLive.Edit do
             phx-mounted={JS.focus()}
           />
 
-          <.button phx-disable-with="Updating weight..." class="btn btn-primary w-full">
-            Update Weight
+          <.button phx-disable-with="Updating Measurement..." class="btn btn-primary w-full">
+            Update Measurement
           </.button>
         </.form>
       </div>
@@ -66,7 +68,7 @@ defmodule GymratWeb.WeightLive.Edit do
           socket
           |> put_flash(
             :info,
-            "The weight was updated!"
+            "The measurement was updated!"
           )
           |> push_navigate(to: ~p"/weights")
         }
