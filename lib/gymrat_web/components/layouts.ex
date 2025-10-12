@@ -54,8 +54,8 @@ defmodule GymratWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-2 py-4 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class="px-2 sm:px-6 lg:px-8">
+      <div class="mx-auto mb-24 max-w-2xl space-y-4">
         {render_slot(@inner_block)}
       </div>
     </main>

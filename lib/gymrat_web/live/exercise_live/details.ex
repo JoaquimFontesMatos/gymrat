@@ -22,9 +22,28 @@ defmodule GymratWeb.ExerciseLive.Details do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">
-        {@fetched_exercise["name"]}
-      </h1>
+      <div class="flex gap-4">
+        <.button
+          class="btn-soft btn-square stroke"
+          phx-click="back_to_workout"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-[1.2em] fill-primary"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </.button>
+        <h1 class="text-2xl font-bold">
+          {@fetched_exercise["name"]}
+        </h1>
+      </div>
 
       <div class="collapse bg-secondary text-secondary-content border-primary border border-4">
         <input type="checkbox" class="peer" />
@@ -111,13 +130,38 @@ defmodule GymratWeb.ExerciseLive.Details do
                 <strong>Reps:</strong> {set.reps}
               </span>
 
-              <div class="flex justify-end flex-wrap">
-                <.button phx-click="update_set" phx-value-set-id={set.id}>
-                  Update
+              <div class="join">
+                <.button
+                  class="btn btn-primary btn-soft btn-square join-item"
+                  phx-click="update_set"
+                  phx-value-set-id={set.id}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="size-[1.2em]"
+                  >
+                    <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+                  </svg>
                 </.button>
 
-                <.button class="btn btn-error" phx-click="show_modal_set">
-                  Delete
+                <.button
+                  class="btn btn-error btn-soft btn-square join-item"
+                  phx-click="show_modal_set"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="size-[1.2em]"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
                 </.button>
 
                 <.modal
@@ -160,13 +204,24 @@ defmodule GymratWeb.ExerciseLive.Details do
         </ul>
       </div>
 
-      <div class="flex justify-end flex-wrap">
+      <div class="flex justify-end flex-wrap gap-2">
         <.button
           :if={@is_workout_exercise_from_user}
-          class="btn btn-error"
+          class="btn btn-error btn-soft btn-square"
           phx-click="show_modal_exercise"
         >
-          Delete
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-[1.2em]"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
+              clip-rule="evenodd"
+            />
+          </svg>
         </.button>
 
         <.modal
@@ -186,10 +241,6 @@ defmodule GymratWeb.ExerciseLive.Details do
           </div>
         </.modal>
       </div>
-
-      <.button phx-click="back_to_workout">
-        Back to Workout
-      </.button>
     </Layouts.app>
     """
   end

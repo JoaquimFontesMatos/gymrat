@@ -1,5 +1,4 @@
 defmodule GymratWeb.WorkoutLive.Edit do
-  alias GymratWeb.PlanLive.Edit
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Workouts
