@@ -62,7 +62,7 @@ defmodule GymratWeb.PlanLive.Details do
               phx-value-workout-id={workout.id}
               tabindex="0"
             >
-              <div class="ml-2 flex justify-start items-center">
+              <div class="ml-2 flex items-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -73,18 +73,18 @@ defmodule GymratWeb.PlanLive.Details do
                   stroke-width="1"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="lucide lucide-dumbbell-icon lucide-dumbbellsize-[1.2em]"
+                  class="lucide lucide-dumbbell-icon lucide-dumbbell size-[1.2em] shrink-0"
                 >
                   <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" />
                 </svg>
-                <div class="p-2 flex flex-col justify-center items-start">
+                <div class="p-2 flex flex-col justify-start text-start">
                   <span>{workout.name}</span>
-                  <span class=" text-gray-500 text-xs h-full">
+                  <span class="text-gray-500 text-xs h-full">
                     {get_localized_weekdays(Workouts.get_workout_weekdays(workout.id))}
                   </span>
                 </div>
               </div>
-              <span class="p-4 opacity-0 w-0 group-active:bg-primary/50 group-active:opacity-100 group-active:w-[35%] group-hover:bg-primary/50 group-hover:opacity-100 group-hover:w-[35%] group-focus:bg-primary/50 group-focus:opacity-100 group-focus:w-[35%] transition-all duration-300 ease-in-out overflow-hidden">
+              <span class="p-6 opacity-0 w-0 group-active:bg-primary/50 group-active:opacity-100 group-active:w-[35%] group-hover:bg-primary/50 group-hover:opacity-100 group-hover:w-[35%] group-focus:bg-primary/50 group-focus:opacity-100 group-focus:w-[35%] transition-all duration-300 ease-in-out overflow-hidden">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
