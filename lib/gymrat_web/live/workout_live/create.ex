@@ -20,11 +20,10 @@ defmodule GymratWeb.WorkoutLive.Create do
             phx-mounted={JS.focus()}
           />
 
-          <label class="mt-4 text-xs text-gray-400">Days to schedule:</label>
           <.input
             field={@form[:selected_weekdays]}
             type="select"
-            label="Weekdays"
+            label="Days to schedule"
             class="select w-full"
             multiple
             options={[

@@ -45,10 +45,10 @@ defmodule GymratWeb.ExerciseLive.Details do
         </h1>
       </div>
 
-      <div class="collapse bg-secondary text-secondary-content border-primary border border-4">
+      <div class="collapse bg-primary text-primary-content border-primary border border-4">
         <input type="checkbox" class="peer" />
         <div class="collapse-title font-semibold">Details</div>
-        <div class="collapse-content text-sm bg-primary text-primary-content peer-checked:bg-neutral peer-checked:text-neutral-content">
+        <div class="collapse-content text-sm bg-primary text-primary-content peer-checked:bg-base-100/20 peer-checked:text-primary-content">
           <div class="flex flex-col gap-4">
             <img
               loading="lazy"
@@ -124,7 +124,7 @@ defmodule GymratWeb.ExerciseLive.Details do
         </div>
         <ul class="order-first md:order-last">
           <%= for set <- @exercise.sets do %>
-            <li class="mb-2 p-2 border rounded flex justify-between items-center">
+            <li class="mb-2 p-2 bg-base-100 border rounded flex justify-between items-center">
               <span>
                 <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
                 <strong>Reps:</strong> {set.reps}

@@ -73,18 +73,35 @@ defmodule GymratWeb.WorkoutLive.Details do
       </div>
       <ul>
         <%= for exercise <- @workout.workout_exercises do %>
-          <li>
+          <li class="bg-base-100">
             <.button
               class="mb-2 border rounded flex justify-between items-center group w-full"
               phx-click="go_to_exercise"
               phx-value-exercise-id={exercise.id}
               tabindex="0"
             >
-              <span class="p-2">
-                {exercise.exercise_id
-                |> String.replace("_", " ")
-                |> String.capitalize()}
-              </span>
+              <div class="ml-2 flex justify-start items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-biceps-flexed-icon lucide-biceps-flexed lucide-dumbbellsize-[1.2em]"
+                >
+                  <path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1" /><path d="M15 14a5 5 0 0 0-7.584 2" /><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15" />
+                </svg>
+
+                <span class="p-2">
+                  {exercise.exercise_id
+                  |> String.replace("_", " ")
+                  |> String.capitalize()}
+                </span>
+              </div>
               <span class="p-4 opacity-0 w-0 group-active:bg-primary/50 group-active:opacity-100 group-active:w-[35%] group-hover:bg-primary/50 group-hover:opacity-100 group-hover:w-[35%] group-focus:bg-primary/50 group-focus:opacity-100 group-focus:w-[35%] transition-all duration-300 ease-in-out overflow-hidden">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

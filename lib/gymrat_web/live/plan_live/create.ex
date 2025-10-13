@@ -24,9 +24,9 @@ defmodule GymratWeb.PlanLive.Create do
             <.button phx-disable-with="Creating plan..." class="btn btn-primary w-full">
               Create a Plan
             </.button>
-            
+
             <div class="divider">OR</div>
-            <.button phx-click="import_plan" class="btn w-full mt-4">
+            <.button phx-click="import_plan" class="btn w-full">
               Import a Plan
             </.button>
           </div>

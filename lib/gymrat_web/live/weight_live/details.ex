@@ -30,7 +30,7 @@ defmodule GymratWeb.WeightLive.Details do
         </div>
         <ul class="order-first md:order-last">
           <%= for weight <- @weights do %>
-            <li class="mb-2 p-2 border rounded flex justify-between items-center">
+            <li class="mb-2 p-2 border rounded flex justify-between items-center bg-base-100">
               <span>
                 <strong>Weight:</strong> {weight.weight} kg
               </span>

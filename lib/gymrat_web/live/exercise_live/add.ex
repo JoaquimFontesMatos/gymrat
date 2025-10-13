@@ -74,12 +74,8 @@ defmodule GymratWeb.ExerciseLive.Add do
         <%= if @exercises && !Enum.empty?(@exercises) do %>
           <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <%= for exercise <- @exercises do %>
-              <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col items-between">
-                <div
-                  phx-click="toggle_exercise_details"
-                  phx-value-exercise-id={exercise["id"]}
-                  class="cursor-pointer grow pb-4"
-                >
+              <div class="border rounded-lg p-4 bg-base-100 shadow-sm hover:shadow-md transition-shadow flex flex-col items-between">
+                <div>
                   <h2 class="text-xl font-semibold mb-2">
                     {exercise["name"] || "N/A"}
                   </h2>
