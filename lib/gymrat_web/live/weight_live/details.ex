@@ -28,7 +28,7 @@ defmodule GymratWeb.WeightLive.Details do
             </canvas>
           </div>
         </div>
-        <ul class="list-disc pl-4 order-first md:order-last">
+        <ul class="order-first md:order-last">
           <%= for weight <- @weights do %>
             <li class="mb-2 p-2 border rounded flex justify-between items-center">
               <span>

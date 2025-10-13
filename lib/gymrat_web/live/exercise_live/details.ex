@@ -6,16 +6,16 @@ defmodule GymratWeb.ExerciseLive.Details do
   alias Gymrat.ExerciseFetcher
 
   @colors [
-    # red
-    %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
-    # green
-    %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"},
     # blue
     %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
+    # purple
+    %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"},
+    # red
+    %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
     # yellow
     %{border: "rgba(234, 179, 8, 0.7)", background: "rgba(234, 179, 8, 0.2)"},
-    # purple
-    %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"}
+    # green
+    %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"}
   ]
 
   @impl true
@@ -122,7 +122,7 @@ defmodule GymratWeb.ExerciseLive.Details do
             </canvas>
           </div>
         </div>
-        <ul class="list-disc pl-4 order-first md:order-last">
+        <ul class="order-first md:order-last">
           <%= for set <- @exercise.sets do %>
             <li class="mb-2 p-2 border rounded flex justify-between items-center">
               <span>
