@@ -1,11 +1,16 @@
 defmodule GymratWeb.UserLive.Profile do
   use GymratWeb, :live_view
 
+  import GymratWeb.MyComponents
+
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-3xl font-bold mb-6">Profile</h1>
+      <.header_with_back_navigate
+        navigate={~p"/"}
+        title="Profile"
+      />
 
       <div class="flex items-center gap-4">
         <svg

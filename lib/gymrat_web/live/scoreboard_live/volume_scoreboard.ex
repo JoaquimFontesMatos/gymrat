@@ -2,14 +2,16 @@ defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Sets
+  import GymratWeb.MyComponents
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">
-        Weekly Scoreboard
-      </h1>
+      <.header_with_back_navigate
+        navigate={~p"/"}
+        title="Weekly Scoreboard"
+      />
 
       <div class="overflow-x-auto">
         <table class="table">

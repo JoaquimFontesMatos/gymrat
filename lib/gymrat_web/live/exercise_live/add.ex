@@ -3,6 +3,7 @@ defmodule GymratWeb.ExerciseLive.Add do
 
   alias Gymrat.ExerciseFetcher
   alias Gymrat.Training.WorkoutExercises
+  import GymratWeb.MyComponents
 
   @impl true
   def mount(%{"plan_id" => plan_id, "workout_id" => workout_id}, _session, socket) do
@@ -27,7 +28,10 @@ defmodule GymratWeb.ExerciseLive.Add do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">Exercises Database</h1>
+      <.header_with_back_navigate
+        navigate={~p"/plans/#{@plan_id}/workouts/#{@workout_id}"}
+        title="Exercises Database"
+      />
 
       <.form for={@search_form} id="search_form" phx-submit="search" phx-change="search_validate">
         <div class="join">

@@ -8,9 +8,10 @@ defmodule GymratWeb.WeightLive.Details do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">
-        {@user.name}'s Weight Progress
-      </h1>
+      <.header_with_back_navigate
+        navigate={~p"/"}
+        title="My Weight Progress"
+      />
 
       <div class="flex flex-col gap-6">
         <div

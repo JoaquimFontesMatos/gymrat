@@ -2,12 +2,16 @@ defmodule GymratWeb.PlanLive.Create do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Plans
+  import GymratWeb.MyComponents
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">Add or Import a Plan</h1>
+      <.header_with_back_navigate
+        navigate={~p"/"}
+        title="Add or Import a Plan"
+      />
 
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="plan_form" phx-submit="save" phx-change="validate">

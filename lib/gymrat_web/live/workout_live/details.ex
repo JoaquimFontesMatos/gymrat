@@ -33,26 +33,7 @@ defmodule GymratWeb.WorkoutLive.Details do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="flex gap-4">
-        <.button
-          class="btn-soft btn-square stroke"
-          phx-click="back_to_plan"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="size-[1.2em] fill-primary"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M9.53 2.47a.75.75 0 0 1 0 1.06L4.81 8.25H15a6.75 6.75 0 0 1 0 13.5h-3a.75.75 0 0 1 0-1.5h3a5.25 5.25 0 1 0 0-10.5H4.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </.button>
-        <h1 class="text-2xl font-bold">{@workout.name}</h1>
-      </div>
+      <.header_with_back_navigate navigate={~p"/plans/#{@plan_id}"} title={@workout.name} />
 
       <div class="flex items-center gap-2">
         <svg
@@ -196,16 +177,6 @@ defmodule GymratWeb.WorkoutLive.Details do
       {:error, _reason} ->
         {:error, :not_found}
     end
-  end
-
-  @impl true
-  def handle_event("back_to_plan", _payload, socket) do
-    {
-      :noreply,
-      socket
-      # Navigate via LiveView push_navigate
-      |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}")
-    }
   end
 
   @impl true

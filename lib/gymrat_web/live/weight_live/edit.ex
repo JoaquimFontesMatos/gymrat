@@ -2,12 +2,16 @@ defmodule GymratWeb.WeightLive.Edit do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.UserWeights
+  import GymratWeb.MyComponents
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">Update Measurement</h1>
+      <.header_with_back_navigate
+        navigate={~p"/weights"}
+        title="Update Measurement"
+      />
 
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="weight_form" phx-submit="save" phx-change="validate">

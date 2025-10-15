@@ -3,12 +3,16 @@ defmodule GymratWeb.PlanLive.Import do
 
   alias Gymrat.Training.Plans
   import Ecto.Changeset
+  import GymratWeb.MyComponents
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">Import a Plan</h1>
+      <.header_with_back_navigate
+        navigate={~p"/"}
+        title="Import a Plan"
+      />
 
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="import_plan_form" phx-submit="import">

@@ -2,12 +2,16 @@ defmodule GymratWeb.WorkoutLive.Create do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Workouts
+  import GymratWeb.MyComponents
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <h1 class="text-2xl font-bold">Add Workout</h1>
+      <.header_with_back_navigate
+        navigate={~p"/plans/#{@plan_id}"}
+        title="Add Workout"
+      />
 
       <div class="mx-auto max-w-sm">
         <.form for={@form} id="workout_form" phx-submit="save" phx-change="validate">
