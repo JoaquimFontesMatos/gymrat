@@ -28,8 +28,10 @@ defmodule GymratWeb.SetLive.Edit do
             field={@form[:weight]}
             type="number"
             label="Weight (Kg)"
+            step="any"
             placeholder="15.0"
             required
+            phx-debounce="blur"
             phx-mounted={JS.focus()}
           />
 

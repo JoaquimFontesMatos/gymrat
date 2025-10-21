@@ -392,7 +392,7 @@ defmodule GymratWeb.ExerciseLive.Details do
   end
 
   @impl true
-  def handle_event("delete_set", %{"set-id" => set_id}, socket) do
+  def handle_event("delete_set", %{"id" => set_id}, socket) do
     case Sets.get_set(set_id) do
       {:ok, set} ->
         case Sets.soft_delete_set(set) do
