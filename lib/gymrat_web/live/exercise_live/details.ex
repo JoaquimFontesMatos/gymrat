@@ -241,7 +241,12 @@ defmodule GymratWeb.ExerciseLive.Details do
 
     # Group by set index
     grouped_weight_by_index = Enum.group_by(indexed_weight_sets, & &1.index)
-    weight_raw_days = grouped_weight_by_day |> Map.keys() |> Enum.sort()
+
+    weight_raw_days =
+      grouped_weight_by_day
+      |> Map.keys()
+      |> Enum.sort(fn a, b -> Date.compare(a, b) == :lt end)
+
     weight_labels = Enum.map(weight_raw_days, &Calendar.strftime(&1, "%d-%m-%y"))
 
     weight_datasets =
@@ -286,7 +291,12 @@ defmodule GymratWeb.ExerciseLive.Details do
 
     # Group by set index
     grouped_reps_by_index = Enum.group_by(indexed_reps_sets, & &1.index)
-    reps_raw_days = grouped_reps_by_day |> Map.keys() |> Enum.sort()
+
+    reps_raw_days =
+      grouped_reps_by_day
+      |> Map.keys()
+      |> Enum.sort(fn a, b -> Date.compare(a, b) == :lt end)
+
     reps_labels = Enum.map(reps_raw_days, &Calendar.strftime(&1, "%d-%m-%y"))
 
     reps_datasets =

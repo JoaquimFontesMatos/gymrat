@@ -12,6 +12,14 @@ Key features include:
 - Leaderboards
 - Customizable workout plans
 
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/dashboard.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/plan.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/workout.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/exercise.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/exercise-description.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/scoreboard.png)
+![s1](https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/weight-progress.png)
+
 Stay tuned for more updates and features to enhance your fitness experience!
 
 To start your Phoenix server:
