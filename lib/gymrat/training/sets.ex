@@ -178,4 +178,53 @@ defmodule Gymrat.Training.Sets do
   def change_set_map(attrs) do
     Set.changeset(%Set{}, attrs)
   end
+
+  def smart_delete_old_sets(months_to_keep \\ 5) do
+    import Ecto.Query
+
+    # Calculate the two cutoff dates
+    five_months_ago_date = Date.add(Date.utc_today(), -months_to_keep * 30)
+    one_month_ago_date = Date.add(Date.utc_today(), -30)
+
+    five_months_ago = NaiveDateTime.new!(five_months_ago_date, ~T[00:00:00])
+    one_month_ago = NaiveDateTime.new!(one_month_ago_date, ~T[00:00:00])
+
+    # Wrap both steps in a transaction
+    Repo.transaction(fn ->
+      # --- STEP 1: Identify and Exclude Records to Keep (Retention Window: 1-5 months) ---
+
+      # This query finds the ID of the single LATEST set_date for each month,
+      # but only for the data in the special retention window.
+      records_to_keep_query =
+        from s in Set,
+          # Only consider data between 1 month and 5 months ago
+          where: s.inserted_at < ^one_month_ago and s.inserted_at > ^five_months_ago,
+          # Group by the year and month of the inserted_at
+          group_by: [fragment("DATE_TRUNC('month', ?)", s.inserted_at)],
+          # Select the inserted_at of the record with the maximum set_date in that month
+          select: max(s.inserted_at)
+
+      # Get the list of IDs that MUST NOT be deleted
+      inserted_at_to_keep = Repo.all(records_to_keep_query)
+
+      # --- STEP 2: Perform the Deletion ---
+
+      # 1. Target all records older than the full deletion cutoff (5 months ago)
+      # OR target records older than 1 month ago AND whose inserted_at is NOT in the 'inserted_at_to_keep' list.
+      deletion_query =
+        from s in Set,
+          where:
+            s.inserted_at < ^five_months_ago or
+              (s.inserted_at < ^one_month_ago and s.inserted_at not in ^inserted_at_to_keep)
+
+      # Execute the deletion
+      {count, _} = Repo.delete_all(deletion_query)
+
+      IO.puts(
+        "Deleted #{count} set records older than 1 month, while keeping the latest record for months 2-5."
+      )
+
+      {:ok, count}
+    end)
+  end
 end

@@ -1,7 +1,7 @@
 <p align="center"><img src="https://raw.githubusercontent.com/JoaquimFontesMatos/gymrat/master/screenshots/gymrat-icon.png" width="130"></p>
 <h2 align="center">Gymrat - Fitness Tracking App</h2>
 
-# What is Gymrat
+## What is Gymrat
 
 Gymrat is your ultimate fitness companion! This web application is designed to help you track your workouts, monitor your progress, and stay motivated on your fitness journey. Whether you're a seasoned athlete or just starting out, Gymrat provides the tools you need to achieve your fitness goals.
 
