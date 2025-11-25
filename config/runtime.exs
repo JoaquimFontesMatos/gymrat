@@ -148,4 +148,15 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  config :gymrat, Oban,
+    repo: Gymrat.Repo,
+    engine: Oban.Engines.Basic,
+    queues: [default: 10],
+    crontab: [
+      # Cron Expression Breakdown:
+      # M H D M W (Minute, Hour, Day-of-Month, Month, Day-of-Week)
+      # 0 3 * * 0  -> At 0 minutes, at 3 AM, every day of the month (*), every month (*), on Sunday (0 or 7)
+      {"0 3 * * 0", Gymrat.Workers.SetCleanupWorker}
+    ]
 end

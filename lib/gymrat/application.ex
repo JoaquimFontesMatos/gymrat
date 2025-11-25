@@ -11,6 +11,7 @@ defmodule Gymrat.Application do
       GymratWeb.Telemetry,
       Gymrat.Repo,
       {DNSCluster, query: Application.get_env(:gymrat, :dns_cluster_query) || :ignore},
+      {Oban, Application.fetch_env!(:gymrat, Oban)},
       {Phoenix.PubSub, name: Gymrat.PubSub},
       # Start a worker by calling: Gymrat.Worker.start_link(arg)
       # {Gymrat.Worker, arg},

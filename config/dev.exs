@@ -73,6 +73,17 @@ config :gymrat, dev_routes: true
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 
+# 2. Configuration for the console backend
+config :logger, :console,
+  # This sets the global minimum level for messages to be processed.
+  # Ensure this is set to :info (or :debug for verbose testing)
+  level: :info,
+
+  # CRITICAL SETTING:
+  # This tells the console backend to process messages from all logger groups
+  # and helps ensure background processes (like Oban workers) stream their output.
+  sync_threshold: 0
+
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20

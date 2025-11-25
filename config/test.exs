@@ -1,4 +1,5 @@
 import Config
+config :gymrat, Oban, testing: :manual
 
 # Only in tests, remove the complexity from the password hashing algorithm
 config :bcrypt_elixir, :log_rounds, 1

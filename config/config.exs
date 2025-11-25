@@ -7,6 +7,12 @@
 # General application configuration
 import Config
 
+config :gymrat, Oban,
+  engine: Oban.Engines.Basic,
+  notifier: Oban.Notifiers.Postgres,
+  queues: [default: 10],
+  repo: Gymrat.Repo
+
 config :gymrat, :scopes,
   user: [
     default: true,
