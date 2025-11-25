@@ -2,10 +2,10 @@ defmodule Gymrat.Workers.SetCleanupWorker do
   use Oban.Worker
   require Logger
 
-  @impl Oban.Worker
+  @impl Worker
   def perform(%Oban.Job{}) do
     case Gymrat.Training.Sets.smart_delete_old_sets() do
-      {:ok, count} ->
+      {:ok, {:ok, count}} ->
         Logger.info("Set cleanup successful. Deleted #{count} old set records.")
         :ok
 
