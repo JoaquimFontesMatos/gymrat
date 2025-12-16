@@ -38,30 +38,22 @@ defmodule Gymrat.Training.Sets do
     end
   end
 
-  def get_todays_workout_exercise_with_sets(workout_exercise_id, user_id) do
-    query =
-      from we in WorkoutExercise,
-        where: we.id == ^workout_exercise_id,
-        where: is_nil(we.deleted_at)
-
+  def get_todays_exercise_with_sets(exercise_id, user_id) do
     today = Date.utc_today()
-
     start_of_day = NaiveDateTime.new!(today, ~T[00:00:00])
     end_of_day = NaiveDateTime.new!(today, ~T[23:59:59])
 
-    sets_query =
+    query =
       from s in Set,
+        join: we in WorkoutExercise,
+        on: s.workout_exercise_id == we.id,
         where:
-          s.inserted_at >= ^start_of_day and s.inserted_at <= ^end_of_day and is_nil(s.deleted_at) and
-            s.user_id == ^user_id
+          we.exercise_id == ^exercise_id and
+            s.user_id == ^user_id and
+            s.inserted_at >= ^start_of_day and s.inserted_at <= ^end_of_day and
+            is_nil(s.deleted_at)
 
-    case Repo.one(query) do
-      %WorkoutExercise{} = workout_exercise ->
-        Repo.preload(workout_exercise, sets: sets_query)
-
-      nil ->
-        {:error, :not_found}
-    end
+    Repo.all(query)
   end
 
   def get_set_sum_weight_by_day(workout_exercise_id, user_id) do
@@ -81,10 +73,10 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
-  def get_sets_weight_by_day(workout_exercise_id, user_id) do
+  def get_sets_weight_by_day(exercise_id, user_id) do
     from(s in Set,
       join: we in assoc(s, :workout_exercise),
-      where: we.id == ^workout_exercise_id,
+      where: we.exercise_id == ^exercise_id,
       where: is_nil(we.deleted_at),
       where: is_nil(s.deleted_at),
       where: s.user_id == ^user_id,
@@ -115,10 +107,10 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
-  def get_sets_reps_by_day(workout_exercise_id, user_id) do
+  def get_sets_reps_by_day(exercise_id, user_id) do
     from(s in Set,
       join: we in assoc(s, :workout_exercise),
-      where: we.id == ^workout_exercise_id,
+      where: we.exercise_id == ^exercise_id,
       where: is_nil(we.deleted_at),
       where: is_nil(s.deleted_at),
       where: s.user_id == ^user_id,

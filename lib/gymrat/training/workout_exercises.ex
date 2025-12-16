@@ -21,6 +21,21 @@ defmodule Gymrat.Training.WorkoutExercises do
     end
   end
 
+  def get_workout_exercise(workout_exercise) do
+    query =
+      from we in WorkoutExercise,
+        where: we.id == ^workout_exercise,
+        where: is_nil(we.deleted_at)
+
+    case Repo.one(query) do
+      %WorkoutExercise{} = workout_exercise ->
+        {:ok, workout_exercise}
+
+      nil ->
+        {:error, :not_found}
+    end
+  end
+
   def is_workout_exercise_from_user(workout_exercise_id, user_id) do
     query =
       from we in WorkoutExercise,

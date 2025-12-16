@@ -106,7 +106,7 @@ defmodule GymratWeb.ExerciseLive.Details do
           </div>
         </div>
         <ul class="order-first md:order-last">
-          <%= for set <- @exercise.sets do %>
+          <%= for set <- @sets do %>
             <.list_item>
               <span>
                 <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
@@ -115,7 +115,7 @@ defmodule GymratWeb.ExerciseLive.Details do
 
               <.joined_action_group
                 on_edit_navigate={
-                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@exercise.id}/sets/#{set.id}/edit"
+                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/#{set.id}/edit"
                 }
                 on_delete="delete_set"
                 resource_id={set.id}
@@ -130,13 +130,13 @@ defmodule GymratWeb.ExerciseLive.Details do
             </.list_item>
           <% end %>
 
-          <%= if Enum.empty?(@exercise.sets) do %>
+          <%= if Enum.empty?(@sets) do %>
             <p>
               No sets added yet.
               <a
                 class="underline hover:text-secondary"
                 href={
-                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@exercise.id}/sets/new"
+                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/new"
                 }
               >
                 Add one!
@@ -207,21 +207,30 @@ defmodule GymratWeb.ExerciseLive.Details do
     is_workout_exercise_from_user =
       WorkoutExercises.is_workout_exercise_from_user(exercise_id, user.id)
 
-    exercise = Sets.get_todays_workout_exercise_with_sets(exercise_id, user.id)
-    {:ok, fetched_exercise} = ExerciseFetcher.fetch_exercise(exercise.exercise_id)
+    case WorkoutExercises.get_workout_exercise(exercise_id) do
+      {:ok, workout_exercise} ->
+        sets =
+          Sets.get_todays_exercise_with_sets(workout_exercise.exercise_id, user.id)
 
-    {:ok,
-     socket
-     |> assign(:plan_id, plan_id)
-     |> assign(:workout_id, workout_id)
-     |> assign(:exercise, exercise)
-     |> assign(:fetched_exercise, fetched_exercise)
-     |> assign(:show_modal_set, false)
-     |> assign(:show_modal_exercise, false)
-     |> assign(:is_workout_exercise_from_user, is_workout_exercise_from_user)
-     |> assign(:weight_chart_data, nil)
-     |> assign(:reps_chart_data, nil)
-     |> push_event("load_chart_data", %{})}
+        {:ok, fetched_exercise} = ExerciseFetcher.fetch_exercise(workout_exercise.exercise_id)
+
+        {:ok,
+         socket
+         |> assign(:plan_id, plan_id)
+         |> assign(:workout_id, workout_id)
+         |> assign(:workout_exercise, workout_exercise)
+         |> assign(:sets, sets)
+         |> assign(:fetched_exercise, fetched_exercise)
+         |> assign(:show_modal_set, false)
+         |> assign(:show_modal_exercise, false)
+         |> assign(:is_workout_exercise_from_user, is_workout_exercise_from_user)
+         |> assign(:weight_chart_data, nil)
+         |> assign(:reps_chart_data, nil)
+         |> push_event("load_chart_data", %{})}
+
+      {:error, _reason} ->
+        {:error, :not_found}
+    end
   end
 
   defp build_weight_chart_data(exercise_id, user_id) do
@@ -327,7 +336,7 @@ defmodule GymratWeb.ExerciseLive.Details do
   @impl true
   def handle_event("load_chart_data", _params, socket) do
     user = socket.assigns.current_scope.user
-    exercise_id = socket.assigns.exercise.id
+    exercise_id = socket.assigns.workout_exercise.exercise_id
 
     weight_chart_data = build_weight_chart_data(exercise_id, user.id)
     reps_chart_data = build_reps_chart_data(exercise_id, user.id)
@@ -346,7 +355,7 @@ defmodule GymratWeb.ExerciseLive.Details do
       # Navigate via LiveView push_navigate
       |> push_navigate(
         to:
-          ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.exercise.id}/sets/new"
+          ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.workout_exercise.id}/sets/new"
       )
     }
   end
@@ -375,7 +384,7 @@ defmodule GymratWeb.ExerciseLive.Details do
 
   @impl true
   def handle_event("delete_exercise", _payload, socket) do
-    case WorkoutExercises.soft_delete_workout_exercise(socket.assigns.exercise) do
+    case WorkoutExercises.soft_delete_workout_exercise(socket.assigns.workout_exercise) do
       {:ok, _} ->
         {
           :noreply,
@@ -416,7 +425,7 @@ defmodule GymratWeb.ExerciseLive.Details do
               )
               |> push_navigate(
                 to:
-                  ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.exercise.id}"
+                  ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/#{socket.assigns.workout_exercise.id}"
               )
             }
 
