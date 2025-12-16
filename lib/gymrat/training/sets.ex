@@ -179,7 +179,7 @@ defmodule Gymrat.Training.Sets do
     Set.changeset(%Set{}, attrs)
   end
 
-  def smart_delete_old_sets(months_to_keep \\ 5) do
+  def smart_delete_old_sets(months_to_keep \\ 12) do
     import Ecto.Query
 
     # Calculate the two cutoff dates
@@ -200,12 +200,16 @@ defmodule Gymrat.Training.Sets do
           # Only consider data between 1 month and 5 months ago
           where: s.inserted_at < ^one_month_ago and s.inserted_at > ^five_months_ago,
           # Group by the year and month of the inserted_at
-          group_by: [fragment("DATE_TRUNC('month', ?)", s.inserted_at)],
+          group_by: [
+            s.workout_exercise_id,
+            s.user_id,
+            fragment("DATE_TRUNC('month', ?)", s.inserted_at)
+          ],
           # Select the inserted_at of the record with the maximum set_date in that month
-          select: max(s.inserted_at)
+          select: max(s.id)
 
       # Get the list of IDs that MUST NOT be deleted
-      inserted_at_to_keep = Repo.all(records_to_keep_query)
+      ids_to_keep = Repo.all(records_to_keep_query)
 
       # --- STEP 2: Perform the Deletion ---
 
@@ -215,7 +219,7 @@ defmodule Gymrat.Training.Sets do
         from s in Set,
           where:
             s.inserted_at < ^five_months_ago or
-              (s.inserted_at < ^one_month_ago and s.inserted_at not in ^inserted_at_to_keep)
+              (s.inserted_at < ^one_month_ago and s.id not in ^ids_to_keep)
 
       # Execute the deletion
       {count, _} = Repo.delete_all(deletion_query)
