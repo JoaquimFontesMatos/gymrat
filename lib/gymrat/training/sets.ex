@@ -183,30 +183,61 @@ defmodule Gymrat.Training.Sets do
     import Ecto.Query
 
     # Calculate the two cutoff dates
-    five_months_ago_date = Date.add(Date.utc_today(), -months_to_keep * 30)
+    max_months_ago_date = Date.add(Date.utc_today(), -months_to_keep * 30)
     one_month_ago_date = Date.add(Date.utc_today(), -30)
 
-    five_months_ago = NaiveDateTime.new!(five_months_ago_date, ~T[00:00:00])
+    max_months_ago = NaiveDateTime.new!(max_months_ago_date, ~T[00:00:00])
     one_month_ago = NaiveDateTime.new!(one_month_ago_date, ~T[00:00:00])
 
     # Wrap both steps in a transaction
     Repo.transaction(fn ->
-      # --- STEP 1: Identify and Exclude Records to Keep (Retention Window: 1-5 months) ---
-
-      # This query finds the ID of the single LATEST set_date for each month,
-      # but only for the data in the special retention window.
-      records_to_keep_query =
+      daily_totals_query =
         from s in Set,
-          # Only consider data between 1 month and 5 months ago
-          where: s.inserted_at < ^one_month_ago and s.inserted_at > ^five_months_ago,
-          # Group by the year and month of the inserted_at
+          where:
+            s.inserted_at < ^one_month_ago and
+              s.inserted_at > ^max_months_ago,
           group_by: [
-            s.workout_exercise_id,
             s.user_id,
+            s.workout_exercise_id,
+            fragment("DATE_TRUNC('day', ?)", s.inserted_at),
             fragment("DATE_TRUNC('month', ?)", s.inserted_at)
           ],
-          # Select the inserted_at of the record with the maximum set_date in that month
-          select: max(s.id)
+          select: %{
+            user_id: s.user_id,
+            workout_exercise_id: s.workout_exercise_id,
+            month: fragment("DATE_TRUNC('month', ?)", s.inserted_at),
+            day: fragment("DATE_TRUNC('day', ?)", s.inserted_at),
+            total_weight: sum(s.weight)
+          }
+
+      best_days_query =
+        from d in subquery(daily_totals_query),
+          windows: [
+            w: [
+              partition_by: [
+                d.user_id,
+                d.workout_exercise_id,
+                d.month
+              ],
+              order_by: [desc: d.total_weight, desc: d.day]
+            ]
+          ],
+          select: %{
+            user_id: d.user_id,
+            workout_exercise_id: d.workout_exercise_id,
+            day: d.day,
+            rn: row_number() |> over(:w)
+          }
+
+      records_to_keep_query =
+        from s in Set,
+          join: b in subquery(best_days_query),
+          on:
+            s.user_id == b.user_id and
+              s.workout_exercise_id == b.workout_exercise_id and
+              fragment("DATE_TRUNC('day', ?)", s.inserted_at) == b.day,
+          where: b.rn == 1,
+          select: s.id
 
       # Get the list of IDs that MUST NOT be deleted
       ids_to_keep = Repo.all(records_to_keep_query)
@@ -218,14 +249,14 @@ defmodule Gymrat.Training.Sets do
       deletion_query =
         from s in Set,
           where:
-            s.inserted_at < ^five_months_ago or
+            s.inserted_at < ^max_months_ago or
               (s.inserted_at < ^one_month_ago and s.id not in ^ids_to_keep)
 
       # Execute the deletion
       {count, _} = Repo.delete_all(deletion_query)
 
       IO.puts(
-        "Deleted #{count} set records older than 1 month, while keeping the latest record for months 2-5."
+        "Deleted #{count} set records older than 1 month, while keeping the latest record for months 2-#{months_to_keep}."
       )
 
       {:ok, count}
