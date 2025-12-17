@@ -26,7 +26,7 @@ defmodule GymratWeb.ExerciseLive.Edit do
 
           <.input
             field={@form[:custom_description]}
-            type="text"
+            type="textarea"
             label="Description"
             placeholder="Enter exercise description"
             required
