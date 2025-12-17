@@ -38,20 +38,31 @@ defmodule Gymrat.Training.Sets do
     end
   end
 
-  def get_todays_exercise_with_sets(exercise_id, user_id) do
+  def get_todays_exercise_with_sets(exercise_id, custom_name, user_id) do
     today = Date.utc_today()
     start_of_day = NaiveDateTime.new!(today, ~T[00:00:00])
     end_of_day = NaiveDateTime.new!(today, ~T[23:59:59])
 
     query =
-      from s in Set,
-        join: we in WorkoutExercise,
-        on: s.workout_exercise_id == we.id,
-        where:
-          we.exercise_id == ^exercise_id and
-            s.user_id == ^user_id and
-            s.inserted_at >= ^start_of_day and s.inserted_at <= ^end_of_day and
-            is_nil(s.deleted_at)
+      if exercise_id do
+        from s in Set,
+          join: we in WorkoutExercise,
+          on: s.workout_exercise_id == we.id,
+          where:
+            we.exercise_id == ^exercise_id and
+              s.user_id == ^user_id and
+              s.inserted_at >= ^start_of_day and s.inserted_at <= ^end_of_day and
+              is_nil(s.deleted_at)
+      else
+        from s in Set,
+          join: we in WorkoutExercise,
+          on: s.workout_exercise_id == we.id,
+          where:
+            we.custom_name == ^custom_name and
+              s.user_id == ^user_id and
+              s.inserted_at >= ^start_of_day and s.inserted_at <= ^end_of_day and
+              is_nil(s.deleted_at)
+      end
 
     Repo.all(query)
   end
@@ -73,21 +84,39 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
-  def get_sets_weight_by_day(exercise_id, user_id) do
-    from(s in Set,
-      join: we in assoc(s, :workout_exercise),
-      where: we.exercise_id == ^exercise_id,
-      where: is_nil(we.deleted_at),
-      where: is_nil(s.deleted_at),
-      where: s.user_id == ^user_id,
-      select: %{
-        day: fragment("date(?)", s.inserted_at),
-        inserted_at: s.inserted_at,
-        weight: s.weight
-      },
-      order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
-    )
-    |> Repo.all()
+  def get_sets_weight_by_day(exercise_id, custom_name, user_id) do
+    query =
+      if exercise_id do
+        from(s in Set,
+          join: we in assoc(s, :workout_exercise),
+          where: we.exercise_id == ^exercise_id,
+          where: is_nil(we.deleted_at),
+          where: is_nil(s.deleted_at),
+          where: s.user_id == ^user_id,
+          select: %{
+            day: fragment("date(?)", s.inserted_at),
+            inserted_at: s.inserted_at,
+            weight: s.weight
+          },
+          order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
+        )
+      else
+        from(s in Set,
+          join: we in assoc(s, :workout_exercise),
+          where: we.custom_name == ^custom_name,
+          where: is_nil(we.deleted_at),
+          where: is_nil(s.deleted_at),
+          where: s.user_id == ^user_id,
+          select: %{
+            day: fragment("date(?)", s.inserted_at),
+            inserted_at: s.inserted_at,
+            weight: s.weight
+          },
+          order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
+        )
+      end
+
+    Repo.all(query)
   end
 
   def get_set_sum_reps_by_day(workout_exercise_id, user_id) do
@@ -107,27 +136,48 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
-  def get_sets_reps_by_day(exercise_id, user_id) do
-    from(s in Set,
-      join: we in assoc(s, :workout_exercise),
-      where: we.exercise_id == ^exercise_id,
-      where: is_nil(we.deleted_at),
-      where: is_nil(s.deleted_at),
-      where: s.user_id == ^user_id,
-      select: %{
-        day: fragment("date(?)", s.inserted_at),
-        inserted_at: s.inserted_at,
-        reps: s.reps
-      },
-      order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
-    )
-    |> Repo.all()
+  def get_sets_reps_by_day(exercise_id, custom_name, user_id) do
+    query =
+      if exercise_id do
+        from(s in Set,
+          join: we in assoc(s, :workout_exercise),
+          where: we.exercise_id == ^exercise_id,
+          where: is_nil(we.deleted_at),
+          where: is_nil(s.deleted_at),
+          where: s.user_id == ^user_id,
+          select: %{
+            day: fragment("date(?)", s.inserted_at),
+            inserted_at: s.inserted_at,
+            reps: s.reps
+          },
+          order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
+        )
+      else
+        from(s in Set,
+          join: we in assoc(s, :workout_exercise),
+          where: we.custom_name == ^custom_name,
+          where: is_nil(we.deleted_at),
+          where: is_nil(s.deleted_at),
+          where: s.user_id == ^user_id,
+          select: %{
+            day: fragment("date(?)", s.inserted_at),
+            inserted_at: s.inserted_at,
+            reps: s.reps
+          },
+          order_by: [asc: fragment("date(?)", s.inserted_at), asc: s.inserted_at]
+        )
+      end
+
+    Repo.all(query)
   end
 
   def get_weekly_training_volume() do
     query =
       from s in Set,
         join: u in assoc(s, :user),
+        join: we in assoc(s, :workout_exercise),
+        where: is_nil(u.deleted_at),
+        where: is_nil(we.deleted_at),
         where: is_nil(s.deleted_at),
         where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"),
         group_by: u.id,

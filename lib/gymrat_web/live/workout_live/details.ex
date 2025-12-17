@@ -74,9 +74,10 @@ defmodule GymratWeb.WorkoutLive.Details do
             </svg>
 
             <span class="p-2">
-              {exercise.exercise_id
-              |> String.replace("_", " ")
-              |> String.capitalize()}
+              {exercise.exercise_id || exercise.custom_name ||
+                "Unknown Exercise"
+                |> String.replace("_", " ")
+                |> String.capitalize()}
             </span>
           </.list_item>
         <% end %>

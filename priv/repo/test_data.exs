@@ -1,6 +1,4 @@
 alias Gymrat.Training.Sets
-alias Gymrat.Repo
-alias Gymrat.Workouts.Set
 
 defmodule Gymrat.TestData do
   def seed_sets do

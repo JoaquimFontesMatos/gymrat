@@ -70,6 +70,14 @@ defmodule GymratWeb.ExerciseLive.Add do
         </div>
 
         <.button type="submit" class="btn btn-primary">Search</.button>
+
+        <.button
+          type="button"
+          class="btn btn-primary"
+          phx-click="add_custom_exercise"
+        >
+          Add Custom
+        </.button>
       </.form>
 
       <%= if @loading do %>
@@ -165,6 +173,19 @@ defmodule GymratWeb.ExerciseLive.Add do
       {:error, _} ->
         {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("add_custom_exercise", _payload, socket) do
+    {
+      :noreply,
+      socket
+      # Navigate via LiveView push_navigate
+      |> push_navigate(
+        to:
+          ~p"/plans/#{socket.assigns.plan_id}/workouts/#{socket.assigns.workout_id}/exercises/new/custom"
+      )
+    }
   end
 
   defp fetch_exercises(socket, name, muscle_group) do
