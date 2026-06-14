@@ -26,8 +26,7 @@ defmodule GymratWeb.WeightLive.Details do
               phx-hook="Chart"
               data-chart={Jason.encode!(@weight_chart_data)}
               data-y-axis-title="Weight (Kg)"
-            >
-            </canvas>
+            ></canvas>
           </div>
         </div>
         <ul class="order-first md:order-last">

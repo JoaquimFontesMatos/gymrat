@@ -109,8 +109,7 @@ defmodule GymratWeb.ExerciseLive.Details do
               phx-hook="Chart"
               data-chart={Jason.encode!(@reps_chart_data)}
               data-y-axis-title="Reps"
-            >
-            </canvas>
+            ></canvas>
           </div>
           <div>
             <canvas
@@ -119,8 +118,7 @@ defmodule GymratWeb.ExerciseLive.Details do
               phx-hook="Chart"
               data-chart={Jason.encode!(@weight_chart_data)}
               data-y-axis-title="Weight (kg)"
-            >
-            </canvas>
+            ></canvas>
           </div>
         </div>
         <ul class="order-first md:order-last">
