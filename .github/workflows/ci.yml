@@ -15,8 +15,10 @@ jobs:
 
     env:
       MIX_ENV: test
-      # config/test.exs expects these defaults; no Infisical or RapidAPI keys needed in CI.
-      DATABASE_URL: ecto://postgres:postgres@localhost/gymrat_test
+      # config/test.exs hardcodes the DB and uses the Swoosh Test mailer, so no
+      # Infisical or RapidAPI keys are needed. EMAIL_FROM is read at send time by
+      # Gymrat.Accounts.UserNotifier; tests that send mail need it set to anything valid.
+      EMAIL_FROM: ci@gymrat.test
 
     services:
       db:
