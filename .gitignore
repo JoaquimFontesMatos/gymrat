@@ -38,3 +38,5 @@ npm-debug.log
 /priv/certs/
 
 /config/.env.exs
+
+.phoenix-pulse-cache.json
