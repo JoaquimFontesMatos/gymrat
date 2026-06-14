@@ -12,6 +12,25 @@ defmodule Gymrat.Training.SetsTest do
     |> NaiveDateTime.truncate(:second)
   end
 
+  describe "get_training_volume_for_plan/2" do
+    test "ranks users by volume logged on that plan's workouts only" do
+      u1 = training_user_fixture()
+      u2 = training_user_fixture()
+      plan = plan_fixture(u1)
+      we = plan |> workout_fixture() |> workout_exercise_fixture()
+
+      set_fixture(u1, we, %{reps: 10, weight: 100.0})
+      set_fixture(u2, we, %{reps: 10, weight: 50.0})
+
+      # u1's work on a different plan must not count toward this plan's board.
+      set_fixture(u1, workout_exercise_chain_fixture(u1), %{reps: 10, weight: 999.0})
+
+      result = Sets.get_training_volume_for_plan(plan.id, :all_time)
+
+      assert Enum.map(result, &{&1.user.id, &1.volume}) == [{u1.id, 1000.0}, {u2.id, 500.0}]
+    end
+  end
+
   describe "get_personal_records/3" do
     test "returns nil when the exercise has no sets" do
       user = training_user_fixture()

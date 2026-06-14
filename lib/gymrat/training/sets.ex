@@ -251,6 +251,39 @@ defmodule Gymrat.Training.Sets do
     |> Repo.all()
   end
 
+  @doc """
+  Like `get_training_volume/1`, but scoped to a single plan: ranks users by the
+  volume they've logged on that plan's workouts. Powers the per-plan
+  ("group") leaderboard.
+  """
+  def get_training_volume_for_plan(plan_id, period \\ :weekly) do
+    query =
+      from s in Set,
+        join: u in assoc(s, :user),
+        join: we in assoc(s, :workout_exercise),
+        join: w in assoc(we, :workout),
+        where: w.plan_id == ^plan_id,
+        where: is_nil(u.deleted_at),
+        where: is_nil(we.deleted_at),
+        where: is_nil(w.deleted_at),
+        where: is_nil(s.deleted_at),
+        group_by: u.id,
+        select: %{
+          user: %{
+            id: u.id,
+            name: u.name,
+            color: u.color
+          },
+          volume: sum(s.reps * s.weight)
+        },
+        order_by: [desc: sum(s.reps * s.weight)],
+        limit: 50
+
+    query
+    |> filter_by_period(period)
+    |> Repo.all()
+  end
+
   defp filter_by_period(query, :weekly),
     do: from(s in query, where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"))
 

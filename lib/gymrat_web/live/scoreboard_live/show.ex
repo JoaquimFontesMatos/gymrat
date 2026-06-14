@@ -1,7 +1,7 @@
 defmodule GymratWeb.ScoreboardLive.Show do
   use GymratWeb, :live_view
 
-  alias Gymrat.Training.Sets
+  alias Gymrat.Training.{Plans, Sets}
   import GymratWeb.MyComponents
 
   @periods %{"weekly" => :weekly, "monthly" => :monthly, "all_time" => :all_time}
@@ -20,12 +20,28 @@ defmodule GymratWeb.ScoreboardLive.Show do
         title={@title}
       />
 
+      <form :if={@plans != []} id="scope-form" phx-change="select_scope" class="mb-4">
+        <label class="flex items-center gap-2">
+          <.icon name="hero-user-group" class="h-5 w-5 shrink-0 text-base-content/60" />
+          <select
+            name="plan_id"
+            class="select select-bordered w-full"
+            aria-label="Leaderboard group"
+          >
+            <option value="" selected={is_nil(@selected_plan_id)}>Everyone</option>
+            <option :for={plan <- @plans} value={plan.id} selected={@selected_plan_id == plan.id}>
+              {plan.name}
+            </option>
+          </select>
+        </label>
+      </form>
+
       <div role="tablist" class="tabs tabs-boxed mb-4">
         <.link
           :for={
             {label, period} <- [{"Weekly", :weekly}, {"Monthly", :monthly}, {"All-Time", :all_time}]
           }
-          patch={~p"/scoreboard?#{[period: period]}"}
+          patch={~p"/scoreboard?#{scope_params(@selected_plan_id, period)}"}
           role="tab"
           class={"tab " <> if(@period == period, do: "tab-active", else: "")}
         >
@@ -49,7 +65,7 @@ defmodule GymratWeb.ScoreboardLive.Show do
               <tr class={"size-5 " <> rank_row_class(index)}>
                 <th>{index + 1}</th>
                 <td>{user_volume.user.name}</td>
-                <td>{user_volume.volume} kg</td>
+                <td>{round(user_volume.volume)} kg</td>
                 <%= if index < 3 do %>
                   <td>
                     <svg
@@ -79,19 +95,50 @@ defmodule GymratWeb.ScoreboardLive.Show do
 
   @impl true
   def mount(_payload, _session, socket) do
-    {:ok, socket}
+    plans = Plans.list_my_plans(socket.assigns.current_scope.user.id)
+    {:ok, assign(socket, :plans, plans)}
   end
 
   @impl true
   def handle_params(params, _uri, socket) do
     period = Map.get(@periods, params["period"], :weekly)
+    selected_plan_id = parse_plan_id(params["plan_id"], socket.assigns.plans)
+
+    volume =
+      if selected_plan_id do
+        Sets.get_training_volume_for_plan(selected_plan_id, period)
+      else
+        Sets.get_training_volume(period)
+      end
 
     {:noreply,
      socket
      |> assign(:period, period)
+     |> assign(:selected_plan_id, selected_plan_id)
      |> assign(:title, @titles[period])
-     |> assign(:volume, Sets.get_training_volume(period))}
+     |> assign(:volume, volume)}
   end
+
+  @impl true
+  def handle_event("select_scope", %{"plan_id" => plan_id}, socket) do
+    {:noreply,
+     push_patch(socket, to: ~p"/scoreboard?#{scope_params(plan_id, socket.assigns.period)}")}
+  end
+
+  # Only accept plan ids the user actually belongs to, so the param can't be used
+  # to peek at another group's leaderboard.
+  defp parse_plan_id(raw, plans) do
+    with raw when is_binary(raw) <- raw,
+         {id, ""} <- Integer.parse(raw),
+         true <- id in Enum.map(plans, & &1.id) do
+      id
+    else
+      _ -> nil
+    end
+  end
+
+  defp scope_params(plan_id, period) when plan_id in [nil, ""], do: [period: period]
+  defp scope_params(plan_id, period), do: [period: period, plan_id: plan_id]
 
   defp rank_row_class(0), do: "text-yellow-500 bg-yellow-600/15"
   defp rank_row_class(1), do: "text-slate-500 bg-slate-600/15"
