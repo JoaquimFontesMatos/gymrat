@@ -1,8 +1,15 @@
-defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
+defmodule GymratWeb.ScoreboardLive.Show do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Sets
   import GymratWeb.MyComponents
+
+  @periods %{"weekly" => :weekly, "monthly" => :monthly, "all_time" => :all_time}
+  @titles %{
+    weekly: "Weekly Scoreboard",
+    monthly: "Monthly Scoreboard",
+    all_time: "All-Time Scoreboard"
+  }
 
   @impl true
   def render(assigns) do
@@ -10,8 +17,21 @@ defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <.header_with_back_navigate
         navigate={~p"/"}
-        title="Weekly Scoreboard"
+        title={@title}
       />
+
+      <div role="tablist" class="tabs tabs-boxed mb-4">
+        <.link
+          :for={
+            {label, period} <- [{"Weekly", :weekly}, {"Monthly", :monthly}, {"All-Time", :all_time}]
+          }
+          patch={~p"/scoreboard?#{[period: period]}"}
+          role="tab"
+          class={"tab " <> if(@period == period, do: "tab-active", else: "")}
+        >
+          {label}
+        </.link>
+      </div>
 
       <div class="overflow-x-auto">
         <table class="table">
@@ -25,7 +45,7 @@ defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
             </tr>
           </thead>
           <tbody>
-            <%= for {user_volume, index} <- Enum.with_index( @weekly_volume) do %>
+            <%= for {user_volume, index} <- Enum.with_index(@volume) do %>
               <tr class={"size-5 " <> case index do
                 0 -> "text-yellow-500 bg-yellow-600/15"
                 1 -> "text-slate-500 bg-slate-600/15"
@@ -34,7 +54,7 @@ defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
               end}>
                 <th>{index + 1}</th>
                 <td>{user_volume.user.name}</td>
-                <td>{user_volume.current_week_volume} kg</td>
+                <td>{user_volume.volume} kg</td>
                 <%= if index < 3 do %>
                   <td>
                     <svg
@@ -68,15 +88,18 @@ defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
   end
 
   @impl true
-  def mount(
-        _payload,
-        _session,
-        socket
-      ) do
-    weekly_volume = Sets.get_weekly_training_volume()
+  def mount(_payload, _session, socket) do
+    {:ok, socket}
+  end
 
-    {:ok,
+  @impl true
+  def handle_params(params, _uri, socket) do
+    period = Map.get(@periods, params["period"], :weekly)
+
+    {:noreply,
      socket
-     |> assign(:weekly_volume, weekly_volume)}
+     |> assign(:period, period)
+     |> assign(:title, @titles[period])
+     |> assign(:volume, Sets.get_training_volume(period))}
   end
 end

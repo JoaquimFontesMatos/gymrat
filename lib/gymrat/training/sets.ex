@@ -171,7 +171,7 @@ defmodule Gymrat.Training.Sets do
     Repo.all(query)
   end
 
-  def get_weekly_training_volume() do
+  def get_training_volume(period \\ :weekly) do
     query =
       from s in Set,
         join: u in assoc(s, :user),
@@ -179,7 +179,6 @@ defmodule Gymrat.Training.Sets do
         where: is_nil(u.deleted_at),
         where: is_nil(we.deleted_at),
         where: is_nil(s.deleted_at),
-        where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"),
         group_by: u.id,
         select: %{
           user: %{
@@ -187,13 +186,23 @@ defmodule Gymrat.Training.Sets do
             name: u.name,
             color: u.color
           },
-          current_week_volume: sum(s.reps * s.weight)
+          volume: sum(s.reps * s.weight)
         },
         order_by: [desc: sum(s.reps * s.weight)],
         limit: 50
 
-    Repo.all(query)
+    query
+    |> filter_by_period(period)
+    |> Repo.all()
   end
+
+  defp filter_by_period(query, :weekly),
+    do: from(s in query, where: s.inserted_at >= fragment("DATE_TRUNC('week', NOW())"))
+
+  defp filter_by_period(query, :monthly),
+    do: from(s in query, where: s.inserted_at >= fragment("DATE_TRUNC('month', NOW())"))
+
+  defp filter_by_period(query, :all_time), do: query
 
   def create_set(attrs \\ %{}) do
     %Set{}
