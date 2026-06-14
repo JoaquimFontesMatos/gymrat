@@ -247,10 +247,21 @@ defmodule GymratWeb.ExerciseLive.Details do
           <ul>
             <%= for set <- @sets do %>
               <.list_item has_border={false}>
-                <span>
-                  <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
-                  <strong>Reps:</strong> {set.reps}
-                </span>
+                <div class="flex items-center gap-5">
+                  <span class="flex items-baseline gap-1.5">
+                    <.icon name="hero-scale" class="h-4 w-4 self-center text-base-content/50" />
+                    <span class="text-lg font-semibold tabular-nums">{set.weight}</span>
+                    <span class="text-sm text-base-content/60">kg</span>
+                  </span>
+                  <span class="flex items-baseline gap-1.5">
+                    <.icon
+                      name="hero-arrow-path"
+                      class="h-4 w-4 self-center text-base-content/50"
+                    />
+                    <span class="text-lg font-semibold tabular-nums">{set.reps}</span>
+                    <span class="text-sm text-base-content/60">reps</span>
+                  </span>
+                </div>
 
                 <.joined_action_group
                   on_edit_navigate={
