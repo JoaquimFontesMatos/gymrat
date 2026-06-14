@@ -23,6 +23,11 @@ if System.get_env("PHX_SERVER") do
 end
 
 if config_env() == :prod do
+  # Run pending Ecto migrations automatically when the app boots in production.
+  # Set RUN_MIGRATIONS_ON_BOOT=false (in Gigalixir config) to opt out.
+  config :gymrat,
+    run_migrations_on_boot: System.get_env("RUN_MIGRATIONS_ON_BOOT", "true") not in ~w(false 0)
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

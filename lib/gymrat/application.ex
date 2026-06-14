@@ -7,6 +7,13 @@ defmodule Gymrat.Application do
 
   @impl true
   def start(_type, _args) do
+    # Run pending migrations before the supervision tree starts so that
+    # children which verify the schema (e.g. Oban) boot against an up-to-date
+    # database. Enabled in prod via config/runtime.exs.
+    if Application.get_env(:gymrat, :run_migrations_on_boot, false) do
+      Gymrat.Release.migrate()
+    end
+
     children = [
       GymratWeb.Telemetry,
       Gymrat.Repo,
