@@ -28,6 +28,52 @@ defmodule GymratWeb.ExerciseLive.Details do
         title={@fetched_exercise["name"] || @workout_exercise.custom_name || "Unknown Exercise"}
       />
 
+      <div :if={@personal_records} class="my-4 grid grid-cols-3 gap-3">
+        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
+          <p class="flex items-center justify-center gap-1 text-xs font-medium uppercase tracking-wide text-base-content/60">
+            <.icon name="hero-trophy" class="h-3.5 w-3.5" /> Best Set
+          </p>
+          <p class="mt-1 text-lg font-bold leading-none">
+            {Float.round(@personal_records.max_weight, 1)}
+            <span class="text-sm font-normal text-base-content/60">kg</span>
+          </p>
+        </div>
+        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
+          <p class="text-xs font-medium uppercase tracking-wide text-base-content/60">
+            Best Volume
+          </p>
+          <p class="mt-1 text-lg font-bold leading-none">
+            {round(@personal_records.best_volume)}
+            <span class="text-sm font-normal text-base-content/60">kg</span>
+          </p>
+        </div>
+        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
+          <p class="flex items-center justify-center gap-1 text-xs font-medium uppercase tracking-wide text-base-content/60">
+            Est. 1RM
+            <span
+              tabindex="0"
+              role="button"
+              aria-label="What is estimated 1RM?"
+              class="group relative inline-flex cursor-help focus:outline-none"
+            >
+              <.icon name="hero-information-circle" class="h-3.5 w-3.5" />
+              <span
+                role="tooltip"
+                class="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-52 max-w-[80vw] rounded-lg bg-neutral px-3 py-2 text-xs font-normal normal-case leading-snug text-neutral-content opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100"
+              >
+                Estimated one-rep max — the most weight you could lift for a single rep.
+                Calculated with the Epley formula, <strong>weight × (1 + reps ÷ 30)</strong>,
+                taking the best result across your logged sets.
+              </span>
+            </span>
+          </p>
+          <p class="mt-1 text-lg font-bold leading-none">
+            {Float.round(@personal_records.best_est_1rm, 1)}
+            <span class="text-sm font-normal text-base-content/60">kg</span>
+          </p>
+        </div>
+      </div>
+
       <div class="collapse bg-primary text-primary-content border-primary border border-4">
         <input type="checkbox" class="peer" />
         <div class="collapse-title font-semibold">Details</div>
@@ -258,12 +304,20 @@ defmodule GymratWeb.ExerciseLive.Details do
             user.id
           )
 
+        personal_records =
+          Sets.get_personal_records(
+            workout_exercise.exercise_id,
+            workout_exercise.custom_name,
+            user.id
+          )
+
         socket =
           socket
           |> assign(:plan_id, plan_id)
           |> assign(:workout_id, workout_id)
           |> assign(:workout_exercise, workout_exercise)
           |> assign(:sets, sets)
+          |> assign(:personal_records, personal_records)
           # Rendered nil-safe: the template falls back to custom_name / defaults
           # until the async fetch (below) fills this in.
           |> assign(:fetched_exercise, nil)

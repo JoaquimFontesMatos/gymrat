@@ -4,6 +4,8 @@ defmodule GymratWeb.ExerciseLive.DetailsTest do
   import Phoenix.LiveViewTest
   import Gymrat.TrainingFixtures
 
+  alias Gymrat.Training.Sets
+
   setup :register_and_log_in_user
 
   defp exercise_path(plan, workout, we),
@@ -33,5 +35,18 @@ defmodule GymratWeb.ExerciseLive.DetailsTest do
     assert html =~ "Details"
     # ...and the async failure surfaces a non-blocking flash rather than crashing.
     assert render_async(lv) =~ "Your sets and history are still available."
+  end
+
+  test "shows personal records once sets are logged", %{conn: conn, user: user} do
+    {plan, workout, we} = chain(user, "0001")
+
+    {:ok, _set} =
+      Sets.create_set(%{reps: 5, weight: 100.0, user_id: user.id, workout_exercise_id: we.id})
+
+    {:ok, lv, _html} = live(conn, exercise_path(plan, workout, we))
+    html = render_async(lv)
+
+    assert html =~ "Best Set"
+    assert html =~ "Est. 1RM"
   end
 end

@@ -171,6 +171,41 @@ defmodule Gymrat.Training.Sets do
     Repo.all(query)
   end
 
+  @doc """
+  Returns the user's personal records for an exercise (identified by `exercise_id`
+  for provider exercises, or `custom_name` for custom ones):
+
+    * `:max_weight` — heaviest weight lifted in a single set
+    * `:best_volume` — highest single-set volume (`reps * weight`)
+    * `:best_est_1rm` — best estimated one-rep max via the Epley formula
+      (`weight * (1 + reps / 30)`)
+
+  Returns `nil` when the exercise has no logged sets.
+  """
+  def get_personal_records(exercise_id, custom_name, user_id) do
+    base =
+      from s in Set,
+        join: we in assoc(s, :workout_exercise),
+        where: is_nil(we.deleted_at) and is_nil(s.deleted_at) and s.user_id == ^user_id,
+        select: %{
+          max_weight: max(s.weight),
+          best_volume: max(s.reps * s.weight),
+          best_est_1rm: max(fragment("? * (1 + ? / 30.0)", s.weight, s.reps))
+        }
+
+    query =
+      if exercise_id do
+        where(base, [s, we], we.exercise_id == ^exercise_id)
+      else
+        where(base, [s, we], we.custom_name == ^custom_name)
+      end
+
+    case Repo.one(query) do
+      %{max_weight: nil} -> nil
+      records -> records
+    end
+  end
+
   def get_training_volume(period \\ :weekly) do
     query =
       from s in Set,

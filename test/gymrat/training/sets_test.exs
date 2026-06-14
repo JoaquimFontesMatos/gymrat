@@ -12,6 +12,38 @@ defmodule Gymrat.Training.SetsTest do
     |> NaiveDateTime.truncate(:second)
   end
 
+  describe "get_personal_records/3" do
+    test "returns nil when the exercise has no sets" do
+      user = training_user_fixture()
+      assert Sets.get_personal_records("0001", nil, user.id) == nil
+    end
+
+    test "computes best weight, best single-set volume, and Epley 1RM" do
+      user = training_user_fixture()
+      we = workout_exercise_chain_fixture(user)
+
+      # weight × (1 + reps/30): 100×(1+5/30)=116.67 ; 80×(1+10/30)=106.67
+      set_fixture(user, we, %{reps: 5, weight: 100.0})
+      set_fixture(user, we, %{reps: 10, weight: 80.0})
+
+      records = Sets.get_personal_records(we.exercise_id, nil, user.id)
+
+      assert records.max_weight == 100.0
+      # single-set volume: 100×5=500 vs 80×10=800
+      assert records.best_volume == 800.0
+      assert_in_delta records.best_est_1rm, 116.67, 0.01
+    end
+
+    test "is scoped to the user" do
+      user = training_user_fixture()
+      other = training_user_fixture()
+      we = workout_exercise_chain_fixture(user)
+      set_fixture(user, we, %{reps: 5, weight: 100.0})
+
+      assert Sets.get_personal_records(we.exercise_id, nil, other.id) == nil
+    end
+  end
+
   describe "get_training_volume/1" do
     test "returns [] when there are no sets" do
       assert Sets.get_training_volume(:weekly) == []
