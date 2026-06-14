@@ -23,257 +23,305 @@ defmodule GymratWeb.ExerciseLive.Details do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.header_with_back_navigate
-        navigate={~p"/plans/#{@plan_id}/workouts/#{@workout_id}"}
-        title={@fetched_exercise["name"] || @workout_exercise.custom_name || "Unknown Exercise"}
-      />
+      <div class="flex justify-between items-center gap-2">
+        <.header_with_back_navigate
+          navigate={~p"/plans/#{@plan_id}/workouts/#{@workout_id}"}
+          title={@fetched_exercise["name"] || @workout_exercise.custom_name || "Unknown Exercise"}
+        />
 
-      <div :if={@personal_records} class="my-4 grid grid-cols-3 gap-3">
-        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
-          <p class="flex items-center justify-center gap-1 text-xs font-medium uppercase tracking-wide text-base-content/60">
-            <.icon name="hero-trophy" class="h-3.5 w-3.5" /> Best Set
-          </p>
-          <p class="mt-1 text-lg font-bold leading-none">
-            {Float.round(@personal_records.max_weight, 1)}
-            <span class="text-sm font-normal text-base-content/60">kg</span>
-          </p>
-        </div>
-        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
-          <p class="text-xs font-medium uppercase tracking-wide text-base-content/60">
-            Best Volume
-          </p>
-          <p class="mt-1 text-lg font-bold leading-none">
-            {round(@personal_records.best_volume)}
-            <span class="text-sm font-normal text-base-content/60">kg</span>
-          </p>
-        </div>
-        <div class="rounded-xl border border-base-300 bg-base-100 p-3 text-center shadow-sm">
-          <p class="flex items-center justify-center gap-1 text-xs font-medium uppercase tracking-wide text-base-content/60">
-            Est. 1RM
-            <span
-              tabindex="0"
-              role="button"
-              aria-label="What is estimated 1RM?"
-              class="group relative inline-flex cursor-help focus:outline-none"
+        <%!-- Owner actions: edit / delete this exercise --%>
+        <div :if={@is_workout_exercise_from_user} class="flex gap-2 shrink-0">
+          <.button
+            phx-click="update_exercise"
+            class="btn btn-primary btn-soft btn-square"
+            aria-label="Edit exercise"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="size-[1.2em]"
             >
-              <.icon name="hero-information-circle" class="h-3.5 w-3.5" />
-              <span
-                role="tooltip"
-                class="pointer-events-none absolute bottom-full right-0 z-10 mb-2 w-52 max-w-[80vw] rounded-lg bg-neutral px-3 py-2 text-xs font-normal normal-case leading-snug text-neutral-content opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100"
-              >
-                Estimated one-rep max — the most weight you could lift for a single rep.
-                Calculated with the Epley formula, <strong>weight × (1 + reps ÷ 30)</strong>,
-                taking the best result across your logged sets.
-              </span>
-            </span>
-          </p>
-          <p class="mt-1 text-lg font-bold leading-none">
-            {Float.round(@personal_records.best_est_1rm, 1)}
-            <span class="text-sm font-normal text-base-content/60">kg</span>
-          </p>
+              <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+            </svg>
+          </.button>
+
+          <.button
+            class="btn btn-error btn-soft btn-square"
+            phx-click="show_modal_exercise"
+            aria-label="Delete exercise"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="size-[1.2em]"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </.button>
+
+          <.modal
+            :if={@show_modal_exercise}
+            id="confirm-modal_exercise"
+            on_cancel={JS.push("hide_modal")}
+          >
+            <h2>Are you sure you want to delete this exercise?</h2>
+            <p>This action cannot be undone.</p>
+            <div class="modal-action">
+              <.button phx-click="hide_modal_exercise">
+                Cancel
+              </.button>
+              <.button class="btn btn-error" phx-click="delete_exercise">
+                Confirm
+              </.button>
+            </div>
+          </.modal>
         </div>
       </div>
 
-      <div class="collapse bg-primary text-primary-content border-primary border border-4">
-        <input type="checkbox" class="peer" />
-        <div class="collapse-title font-semibold">Details</div>
-        <div class="collapse-content text-sm bg-primary text-primary-content peer-checked:bg-base-100/20 peer-checked:text-primary-content">
-          <div class="flex flex-col gap-4">
-            <%= if @workout_exercise.exercise_id do %>
-              <div class="flex items-center gap-4">
+      <div class="flex flex-col gap-6 mt-4">
+        <%!-- Personal records --%>
+        <div :if={@personal_records} class="gap-3 grid grid-cols-3">
+          <div class="bg-base-100 shadow-sm p-3 border border-base-300 rounded-xl text-center">
+            <p class="flex justify-center items-center gap-1 font-medium text-xs text-base-content/60 uppercase tracking-wide">
+              <.icon name="hero-trophy" class="w-3.5 h-3.5" /> Best Set
+            </p>
+            <p class="mt-1 font-bold text-lg leading-none">
+              {Float.round(@personal_records.max_weight, 1)}
+              <span class="font-normal text-sm text-base-content/60">kg</span>
+            </p>
+          </div>
+          <div class="bg-base-100 shadow-sm p-3 border border-base-300 rounded-xl text-center">
+            <p class="font-medium text-xs text-base-content/60 uppercase tracking-wide">
+              Best Volume
+            </p>
+            <p class="mt-1 font-bold text-lg leading-none">
+              {round(@personal_records.best_volume)}
+              <span class="font-normal text-sm text-base-content/60">kg</span>
+            </p>
+          </div>
+          <div class="bg-base-100 shadow-sm p-3 border border-base-300 rounded-xl text-center">
+            <p class="flex justify-center items-center gap-1 font-medium text-xs text-base-content/60 uppercase tracking-wide">
+              Est. 1RM
+              <span
+                tabindex="0"
+                role="button"
+                aria-label="What is estimated 1RM?"
+                class="group inline-flex relative focus:outline-none cursor-help"
+              >
+                <.icon name="hero-information-circle" class="w-3.5 h-3.5" />
+                <span
+                  role="tooltip"
+                  class="right-0 bottom-full z-10 absolute bg-neutral opacity-0 group-focus:opacity-100 group-hover:opacity-100 shadow-lg mb-2 px-3 py-2 rounded-lg w-52 max-w-[80vw] font-normal text-neutral-content text-xs normal-case leading-snug transition-opacity duration-150 pointer-events-none"
+                >
+                  Estimated one-rep max — the most weight you could lift for a single rep.
+                  Calculated with the Epley formula, <strong>weight × (1 + reps ÷ 30)</strong>,
+                  taking the best result across your logged sets.
+                </span>
+              </span>
+            </p>
+            <p class="mt-1 font-bold text-lg leading-none">
+              {Float.round(@personal_records.best_est_1rm, 1)}
+              <span class="font-normal text-sm text-base-content/60">kg</span>
+            </p>
+          </div>
+        </div>
+
+        <%!-- Exercise reference (collapsed by default) --%>
+        <div class="collapse bg-primary border border-4 border-primary text-primary-content">
+          <input type="checkbox" class="peer" />
+          <div class="collapse-title font-semibold">Details</div>
+          <div class="collapse-content bg-primary peer-checked:bg-base-100/20 text-primary-content peer-checked:text-primary-content text-sm">
+            <div class="flex flex-col gap-4">
+              <%= if @workout_exercise.exercise_id do %>
+                <div class="flex items-center gap-4">
+                  <img
+                    loading="lazy"
+                    src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.jpg"}
+                    data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.png"}
+                    data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.webp"}
+                    alt="Exercise Image"
+                    class="flex-1 min-w-0 h-56 object-cover"
+                    onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+                  />
+                  <.workout_icon
+                    name={
+                      exercise_icon(
+                        @workout_exercise.body_part ||
+                          List.first(List.wrap(@fetched_exercise["primaryMuscles"]))
+                      )
+                    }
+                    class="w-24 h-40 shrink-0"
+                  />
+                </div>
+                <p>
+                  <strong>Primary Muscles:</strong>
+                  {Enum.join(List.wrap(@fetched_exercise["primaryMuscles"] || []), ", ")}
+                </p>
+                <p>
+                  <strong>Secondary Muscles:</strong>
+                  {Enum.join(List.wrap(@fetched_exercise["secondaryMuscles"] || []), ", ")}
+                </p>
+                <p>
+                  <strong>Level:</strong>
+                  <span class={"px-2 py-1 rounded "<>
+                  case @fetched_exercise["level"] do
+                  "beginner" -> "bg-green-200 text-green-800"
+                  "intermediate" -> "bg-yellow-200 text-yellow-800"
+                  "expert" -> "bg-red-200 text-red-800"
+                  _ -> "bg-gray-200 text-gray-600"
+                  end
+                  }>
+                    {@fetched_exercise["level"] || "N/A"}
+                  </span>
+                </p>
+                <p><strong>Category:</strong> {@fetched_exercise["category"] || "N/A"}</p>
+                <p><strong>Equipment:</strong> {@fetched_exercise["equipment"] || "N/A"}</p>
+                <p><strong>Force:</strong> {@fetched_exercise["force"] || "N/A"}</p>
+                <div>
+                  <strong>Instructions:</strong>
+                  <ol class="ml-4">
+                    <li
+                      :for={instruction <- @fetched_exercise["instructions"] || []}
+                      class="list-decimal"
+                    >
+                      {instruction}
+                    </li>
+                  </ol>
+                </div>
+              <% else %>
                 <img
                   loading="lazy"
-                  src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.jpg"}
-                  data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.png"}
-                  data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.webp"}
+                  src={@workout_exercise.custom_image_url}
                   alt="Exercise Image"
-                  class="flex-1 min-w-0 h-56 object-cover"
-                  onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+                  class="w-full h-56 object-cover"
                 />
-                <.workout_icon
-                  name={
-                    exercise_icon(
-                      @workout_exercise.body_part ||
-                        List.first(List.wrap(@fetched_exercise["primaryMuscles"]))
-                    )
-                  }
-                  class="h-40 w-24 shrink-0"
-                />
-              </div>
-              <p>
-                <strong>Primary Muscles:</strong>
-                {Enum.join(List.wrap(@fetched_exercise["primaryMuscles"] || []), ", ")}
-              </p>
-              <p>
-                <strong>Secondary Muscles:</strong>
-                {Enum.join(List.wrap(@fetched_exercise["secondaryMuscles"] || []), ", ")}
-              </p>
-              <p>
-                <strong>Level:</strong>
-                <span class={"px-2 py-1 rounded "<>
-                case @fetched_exercise["level"] do
-                "beginner" -> "bg-green-200 text-green-800"
-                "intermediate" -> "bg-yellow-200 text-yellow-800"
-                "expert" -> "bg-red-200 text-red-800"
-                _ -> "bg-gray-200 text-gray-600"
-                end
-                }>
-                  {@fetched_exercise["level"] || "N/A"}
-                </span>
-              </p>
-              <p><strong>Category:</strong> {@fetched_exercise["category"] || "N/A"}</p>
-              <p><strong>Equipment:</strong> {@fetched_exercise["equipment"] || "N/A"}</p>
-              <p><strong>Force:</strong> {@fetched_exercise["force"] || "N/A"}</p>
-              <div>
-                <strong>Instructions:</strong>
-                <ol class="ml-4">
-                  <li
-                    :for={instruction <- @fetched_exercise["instructions"] || []}
-                    class="list-decimal"
-                  >
-                    {instruction}
-                  </li>
-                </ol>
-              </div>
-            <% else %>
-              <img
-                loading="lazy"
-                src={@workout_exercise.custom_image_url}
-                alt="Exercise Image"
-                class="w-full h-56 object-cover"
-              />
-              <div>
-                <strong>Description:</strong>
-                <p>
-                  {@workout_exercise.custom_description || "N/A"}
-                </p>
-              </div>
-            <% end %>
+                <div>
+                  <strong>Description:</strong>
+                  <p>
+                    {@workout_exercise.custom_description || "N/A"}
+                  </p>
+                </div>
+              <% end %>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex flex-col gap-6">
+        <%!-- Rest timer --%>
         <div
-          id="chart-loader"
-          phx-hook="ChartLoader"
-          class="flex flex-col md:flex-row gap-4 justify-center items-center w-full order-last md:order-first"
+          id="rest-timer"
+          phx-hook="RestTimer"
+          phx-update="ignore"
+          class="bg-base-100 shadow-sm p-4 border border-base-300 rounded-xl transition-shadow"
         >
-          <div>
-            <canvas
-              :if={@reps_chart_data}
-              id="repsProgressChart"
-              phx-hook="Chart"
-              data-chart={Jason.encode!(@reps_chart_data)}
-              data-y-axis-title="Reps"
-            ></canvas>
+          <div class="flex justify-between items-center gap-3">
+            <span class="flex items-center gap-2 font-medium text-sm text-base-content/60 uppercase tracking-wide">
+              <.icon name="hero-clock" class="w-5 h-5" /> Rest Timer
+            </span>
+            <span data-role="display" class="font-mono font-bold tabular-nums text-3xl">
+              0:00
+            </span>
           </div>
-          <div>
-            <canvas
-              :if={@weight_chart_data}
-              id="weightProgressChart"
-              phx-hook="Chart"
-              data-chart={Jason.encode!(@weight_chart_data)}
-              data-y-axis-title="Weight (kg)"
-            ></canvas>
+          <div class="flex flex-wrap gap-2 mt-3">
+            <button type="button" data-rest="60" class="btn btn-sm btn-soft btn-primary">60s</button>
+            <button type="button" data-rest="90" class="btn btn-sm btn-soft btn-primary">90s</button>
+            <button type="button" data-rest="120" class="btn btn-sm btn-soft btn-primary">
+              120s
+            </button>
+            <button type="button" data-role="reset" class="ml-auto btn btn-sm btn-ghost">
+              Reset
+            </button>
           </div>
         </div>
-        <ul class="order-first md:order-last">
-          <%= for set <- @sets do %>
-            <.list_item>
-              <span>
-                <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
-                <strong>Reps:</strong> {set.reps}
-              </span>
 
-              <.joined_action_group
-                on_edit_navigate={
-                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/#{set.id}/edit"
-                }
-                on_delete="delete_set"
-                resource_id={set.id}
-                show_modal={@show_modal_set}
-                resource_name="set"
-              >
-                <:modal_content>
-                  <h2>Are you sure you want to delete this set?</h2>
-                  <p>This action cannot be undone.</p>
-                </:modal_content>
-              </.joined_action_group>
-            </.list_item>
-          <% end %>
+        <%!-- Today's sets --%>
+        <section>
+          <h2 class="mb-2 font-medium text-sm text-base-content/60 uppercase tracking-wide">
+            Today's Sets
+          </h2>
+          <ul>
+            <%= for set <- @sets do %>
+              <.list_item has_border={false}>
+                <span>
+                  <strong>Weight:</strong> {set.weight} kg &nbsp; | &nbsp;
+                  <strong>Reps:</strong> {set.reps}
+                </span>
 
-          <%= if Enum.empty?(@sets) do %>
-            <p>
-              No sets added yet.
-              <a
-                class="underline hover:text-secondary"
-                href={
-                  ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/new"
-                }
-              >
-                Add one!
-              </a>
-            </p>
-          <% else %>
-            <.button phx-click="add_set" class="btn btn-primary w-full">
-              Add a Set
-            </.button>
-          <% end %>
-        </ul>
-      </div>
+                <.joined_action_group
+                  on_edit_navigate={
+                    ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/#{set.id}/edit"
+                  }
+                  on_delete="delete_set"
+                  resource_id={set.id}
+                  show_modal={@show_modal_set}
+                  resource_name="set"
+                >
+                  <:modal_content>
+                    <h2>Are you sure you want to delete this set?</h2>
+                    <p>This action cannot be undone.</p>
+                  </:modal_content>
+                </.joined_action_group>
+              </.list_item>
+            <% end %>
 
-      <div class="flex justify-end flex-wrap gap-2">
-        <.button
-          :if={@is_workout_exercise_from_user}
-          phx-click="update_exercise"
-          class="btn btn-primary btn-soft btn-square"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="size-[1.2em]"
+            <%= if Enum.empty?(@sets) do %>
+              <p>
+                No sets added yet.
+                <a
+                  class="hover:text-secondary underline"
+                  href={
+                    ~p"/plans/#{@plan_id}/workouts/#{@workout_id}/exercises/#{@workout_exercise.id}/sets/new"
+                  }
+                >
+                  Add one!
+                </a>
+              </p>
+            <% else %>
+              <.button phx-click="add_set" class="w-full btn btn-primary">
+                Add a Set
+              </.button>
+            <% end %>
+          </ul>
+        </section>
+
+        <%!-- Progress charts (loaded async via the ChartLoader hook) --%>
+        <section>
+          <h2
+            :if={@reps_chart_data || @weight_chart_data}
+            class="mb-2 font-medium text-sm text-base-content/60 uppercase tracking-wide"
           >
-            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
-          </svg>
-        </.button>
-
-        <.button
-          :if={@is_workout_exercise_from_user}
-          class="btn btn-error btn-soft btn-square"
-          phx-click="show_modal_exercise"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            class="size-[1.2em]"
+            Progress
+          </h2>
+          <div
+            id="chart-loader"
+            phx-hook="ChartLoader"
+            class="flex md:flex-row flex-col justify-center items-center gap-4 w-full"
           >
-            <path
-              fill-rule="evenodd"
-              d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </.button>
-
-        <.modal
-          :if={@show_modal_exercise}
-          id="confirm-modal_exercise"
-          on_cancel={JS.push("hide_modal")}
-        >
-          <h2>Are you sure you want to delete this exercise?</h2>
-          <p>This action cannot be undone.</p>
-          <div class="modal-action">
-            <.button phx-click="hide_modal_exercise">
-              Cancel
-            </.button>
-            <.button class="btn btn-error" phx-click="delete_exercise">
-              Confirm
-            </.button>
+            <div>
+              <canvas
+                :if={@reps_chart_data}
+                id="repsProgressChart"
+                phx-hook="Chart"
+                data-chart={Jason.encode!(@reps_chart_data)}
+                data-y-axis-title="Reps"
+              ></canvas>
+            </div>
+            <div>
+              <canvas
+                :if={@weight_chart_data}
+                id="weightProgressChart"
+                phx-hook="Chart"
+                data-chart={Jason.encode!(@weight_chart_data)}
+                data-y-axis-title="Weight (kg)"
+              ></canvas>
+            </div>
           </div>
-        </.modal>
+        </section>
       </div>
     </Layouts.app>
     """

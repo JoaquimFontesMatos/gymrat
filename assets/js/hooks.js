@@ -72,4 +72,72 @@ Hooks.Chart = {
   },
 };
 
+Hooks.RestTimer = {
+  mounted() {
+    this.remaining = 0;
+    this.interval = null;
+    this.display = this.el.querySelector("[data-role=display]");
+
+    const format = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    const render = () => {
+      this.display.textContent = format(Math.max(this.remaining, 0));
+    };
+
+    this.stop = () => {
+      if (this.interval) {
+        clearInterval(this.interval);
+        this.interval = null;
+      }
+    };
+
+    this.beep = () => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) {
+        /* Web Audio unavailable — fail silently */
+      }
+    };
+
+    this.start = (seconds) => {
+      this.stop();
+      this.remaining = seconds;
+      render();
+      this.interval = setInterval(() => {
+        this.remaining -= 1;
+        render();
+        if (this.remaining <= 0) {
+          this.stop();
+          this.beep();
+          this.el.classList.add("ring-2", "ring-success");
+          setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
+        }
+      }, 1000);
+    };
+
+    this.el.querySelectorAll("[data-rest]").forEach((btn) => {
+      btn.addEventListener("click", () => this.start(parseInt(btn.dataset.rest, 10)));
+    });
+    this.el.querySelector("[data-role=reset]").addEventListener("click", () => {
+      this.stop();
+      this.remaining = 0;
+      render();
+    });
+
+    render();
+  },
+
+  destroyed() {
+    this.stop();
+  },
+};
+
 export default Hooks;
