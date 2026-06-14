@@ -107,9 +107,9 @@ defmodule Gymrat.Training.SetsTest do
       we = workout_exercise_chain_fixture(user)
       set_fixture(user, we, %{reps: 10, weight: 10.0})
 
-      # The User schema omits the deleted_at field even though the column exists,
-      # so set it directly to exercise the query's is_nil(u.deleted_at) guard.
-      Repo.query!("UPDATE users SET deleted_at = NOW() WHERE id = $1", [user.id])
+      user
+      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.local_now())
+      |> Repo.update!()
 
       assert Sets.get_training_volume(:all_time) == []
     end

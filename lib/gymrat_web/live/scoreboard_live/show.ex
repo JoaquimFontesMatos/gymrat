@@ -46,12 +46,7 @@ defmodule GymratWeb.ScoreboardLive.Show do
           </thead>
           <tbody>
             <%= for {user_volume, index} <- Enum.with_index(@volume) do %>
-              <tr class={"size-5 " <> case index do
-                0 -> "text-yellow-500 bg-yellow-600/15"
-                1 -> "text-slate-500 bg-slate-600/15"
-                2 -> "text-amber-800 bg-amber-900/15"
-                _->""
-              end}>
+              <tr class={"size-5 " <> rank_row_class(index)}>
                 <th>{index + 1}</th>
                 <td>{user_volume.user.name}</td>
                 <td>{user_volume.volume} kg</td>
@@ -61,12 +56,7 @@ defmodule GymratWeb.ScoreboardLive.Show do
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
                       fill="currentColor"
-                      class={"size-5 " <> case index do
-                        0 -> "text-yellow-500 stroke-yellow-600"
-                        1 -> "text-slate-500 stroke-slate-600"
-                        2 -> "text-amber-800 stroke-amber-900"
-                        _->""
-                      end}
+                      class={"size-5 " <> medal_class(index)}
                     >
                       <path
                         fill-rule="evenodd"
@@ -102,4 +92,14 @@ defmodule GymratWeb.ScoreboardLive.Show do
      |> assign(:title, @titles[period])
      |> assign(:volume, Sets.get_training_volume(period))}
   end
+
+  defp rank_row_class(0), do: "text-yellow-500 bg-yellow-600/15"
+  defp rank_row_class(1), do: "text-slate-500 bg-slate-600/15"
+  defp rank_row_class(2), do: "text-amber-800 bg-amber-900/15"
+  defp rank_row_class(_), do: ""
+
+  defp medal_class(0), do: "text-yellow-500 stroke-yellow-600"
+  defp medal_class(1), do: "text-slate-500 stroke-slate-600"
+  defp medal_class(2), do: "text-amber-800 stroke-amber-900"
+  defp medal_class(_), do: ""
 end
