@@ -246,19 +246,19 @@ defmodule GymratWeb.ExerciseLive.Details do
           </h2>
           <ul>
             <%= for set <- @sets do %>
-              <.list_item has_border={false}>
+              <.list_item>
                 <div class="flex items-center gap-5">
                   <span class="flex items-baseline gap-1.5">
-                    <.icon name="hero-scale" class="h-4 w-4 self-center text-base-content/50" />
-                    <span class="text-lg font-semibold tabular-nums">{set.weight}</span>
+                    <.icon name="hero-scale" class="self-center w-4 h-4 text-base-content/50" />
+                    <span class="font-semibold tabular-nums text-lg">{set.weight}</span>
                     <span class="text-sm text-base-content/60">kg</span>
                   </span>
                   <span class="flex items-baseline gap-1.5">
                     <.icon
                       name="hero-arrow-path"
-                      class="h-4 w-4 self-center text-base-content/50"
+                      class="self-center w-4 h-4 text-base-content/50"
                     />
-                    <span class="text-lg font-semibold tabular-nums">{set.reps}</span>
+                    <span class="font-semibold tabular-nums text-lg">{set.reps}</span>
                     <span class="text-sm text-base-content/60">reps</span>
                   </span>
                 </div>

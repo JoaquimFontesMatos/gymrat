@@ -19,7 +19,7 @@ defmodule GymratWeb.MyComponents do
       <%= if @rest[:href] || @rest[:navigate] || @rest[:patch] do %>
         <.link
           class={
-            "relative mb-2 flex justify-between group w-full items-stretch border border-base-300 rounded-xl overflow-hidden transition-shadow shadow-sm" <> @class
+            "relative mb-2 flex justify-between group w-full items-stretch border border-base-300 rounded-xl transition-shadow shadow-sm" <> @class
           }
           {@rest}
           tabindex="0"
@@ -27,7 +27,7 @@ defmodule GymratWeb.MyComponents do
           <div class="flex justify-start items-center ml-2 py-2 h-full">
             {render_slot(@inner_block)}
           </div>
-          <span class="absolute inset-y-0 right-0 flex items-center group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 pl-2 w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
+          <span class="right-0 absolute inset-y-0 flex items-center group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 shadow-sm shadow-primary/50 rounded-r-xl pl-2 w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
