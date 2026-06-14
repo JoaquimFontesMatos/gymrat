@@ -24,7 +24,8 @@ defmodule Gymrat.Training.Workouts do
         where: is_nil(p.deleted_at),
         where: is_nil(up.deleted_at),
         where: not is_nil(ww.weekday),
-        where: up.user_id == ^user_id
+        where: up.user_id == ^user_id,
+        preload: [plan: p]
     )
   end
 

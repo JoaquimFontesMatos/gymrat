@@ -1,4 +1,4 @@
-defmodule GymratWeb.ScoreboardLive.VolumeScoreboard do
+defmodule GymratWeb.ScoreboardLive.WeeklyScoreboard do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.Sets

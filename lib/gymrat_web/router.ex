@@ -90,7 +90,7 @@ defmodule GymratWeb.Router do
       live "/weights/new", WeightLive.Create, :new_weight
       live "/weights/:id/edit", WeightLive.Edit, :edit_weight
 
-      live "/scoreboard", ScoreboardLive.VolumeScoreboard, :volume_scoreboard
+      live "/scoreboard", ScoreboardLive.WeeklyScoreboard, :weekly_scoreboard
 
       live "/users/profile", UserLive.Profile, :profile
       live "/users/settings", UserLive.Settings, :edit
