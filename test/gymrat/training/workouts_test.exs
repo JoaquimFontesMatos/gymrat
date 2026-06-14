@@ -27,7 +27,12 @@ defmodule Gymrat.Training.WorkoutsTest do
         Workouts.create_workout_with_weekdays(%{"name" => "A", "plan_id" => workout.id}, [1, 3, 5])
 
       assert created.name == "A"
-      assert Enum.sort(Enum.map(Workouts.get_workout_weekdays(created.id), & &1.weekday)) == [1, 3, 5]
+
+      assert Enum.sort(Enum.map(Workouts.get_workout_weekdays(created.id), & &1.weekday)) == [
+               1,
+               3,
+               5
+             ]
     end
   end
 
@@ -93,7 +98,11 @@ defmodule Gymrat.Training.WorkoutsTest do
         Workouts.update_workout_with_weekdays(workout, %{"name" => "Renamed"}, [6, 7])
 
       assert updated.name == "Renamed"
-      assert Enum.sort(Enum.map(Workouts.get_workout_weekdays(workout.id), & &1.weekday)) == [6, 7]
+
+      assert Enum.sort(Enum.map(Workouts.get_workout_weekdays(workout.id), & &1.weekday)) == [
+               6,
+               7
+             ]
     end
   end
 end
