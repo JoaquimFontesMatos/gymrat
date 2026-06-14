@@ -2,6 +2,7 @@ defmodule GymratWeb.ExerciseLive.Add do
   use GymratWeb, :live_view
 
   alias Gymrat.ExerciseFetcher
+  alias Gymrat.ExerciseCache
   alias Gymrat.Training.WorkoutExercises
   import GymratWeb.MyComponents
 
@@ -18,6 +19,7 @@ defmodule GymratWeb.ExerciseLive.Add do
         plan_id: plan_id,
         workout_id: workout_id,
         exercises: [],
+        added_ids: WorkoutExercises.added_exercise_ids(workout_id),
         loading: true
       )
 
@@ -81,16 +83,24 @@ defmodule GymratWeb.ExerciseLive.Add do
       </.form>
 
       <%= if @loading do %>
-        <p class="text-center mt-4">Loading exercises...</p>
+        <p class="mt-4 text-center">Loading exercises...</p>
       <% else %>
         <%= if @exercises && !Enum.empty?(@exercises) do %>
-          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-8">
             <%= for exercise <- @exercises do %>
-              <div class="border rounded-lg p-4 bg-base-100 shadow-sm hover:shadow-md transition-shadow flex flex-col items-between">
+              <div class="relative flex flex-col items-between bg-base-100 shadow-sm hover:shadow-md p-4 border rounded-lg transition-shadow">
                 <div>
-                  <h2 class="text-xl font-semibold mb-2">
-                    {exercise["name"] || "N/A"}
-                  </h2>
+                  <div class="flex justify-between items-center gap-2 mb-2 pr-15">
+                    <h2 class="font-semibold text-xl">
+                      {exercise["name"] || "N/A"}
+                    </h2>
+                    <span
+                      :if={MapSet.member?(@added_ids, exercise["id"])}
+                      class="top-5 right-0 absolute gap-1 badge badge-success shrink-0"
+                    >
+                      <.icon name="hero-check" class="w-4 h-4" />
+                    </span>
+                  </div>
 
                   <div class="mt-2 p-2 rounded">
                     <img
@@ -111,21 +121,27 @@ defmodule GymratWeb.ExerciseLive.Add do
                 </div>
 
                 <div class="m-auto">
-                  <.button
-                    type="button"
-                    class="btn btn-primary"
-                    phx-click="add_exercise"
-                    phx-value-exercise-id={exercise["id"]}
-                    phx-value-body-part={List.first(List.wrap(exercise["primaryMuscles"]))}
-                  >
-                    Add Exercise
-                  </.button>
+                  <%= if MapSet.member?(@added_ids, exercise["id"]) do %>
+                    <.button type="button" class="btn btn-disabled" disabled>
+                      Added
+                    </.button>
+                  <% else %>
+                    <.button
+                      type="button"
+                      class="btn btn-primary"
+                      phx-click="add_exercise"
+                      phx-value-exercise-id={exercise["id"]}
+                      phx-value-body-part={List.first(List.wrap(exercise["primaryMuscles"]))}
+                    >
+                      Add Exercise
+                    </.button>
+                  <% end %>
                 </div>
               </div>
             <% end %>
           </div>
         <% else %>
-          <p class="text-center mt-4 text-gray-700">No exercises found.</p>
+          <p class="mt-4 text-gray-700 text-center">No exercises found.</p>
         <% end %>
       <% end %>
     </Layouts.app>
@@ -172,8 +188,11 @@ defmodule GymratWeb.ExerciseLive.Add do
           )
         }
 
+      {:error, :already_added} ->
+        {:noreply, put_flash(socket, :info, "That exercise is already in this workout.")}
+
       {:error, _} ->
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "Couldn't add the exercise. Please try again.")}
     end
   end
 
@@ -190,56 +209,69 @@ defmodule GymratWeb.ExerciseLive.Add do
     }
   end
 
+  @impl true
+  def handle_async(:search, {:ok, {:ok, exercises}}, socket) do
+    {:noreply, assign(socket, exercises: exercises, loading: false)}
+  end
+
+  def handle_async(:search, {:ok, {:unexpected, body}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Unexpected API data format. Expected a list: #{inspect(body)}")
+     |> assign(exercises: [], loading: false)}
+  end
+
+  def handle_async(:search, {:ok, {:error, reason}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to fetch exercises: #{inspect(reason)}")
+     |> assign(exercises: [], loading: false)}
+  end
+
+  def handle_async(:search, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, "Failed to fetch exercises: #{inspect(reason)}")
+     |> assign(exercises: [], loading: false)}
+  end
+
+  # Sets the loading state immediately and runs the (cached) API lookup off the
+  # critical path so search/mount never blocks on the external API. Results land
+  # in handle_async/3 above.
   defp fetch_exercises(socket, name, muscle_group) do
     name = String.trim(name || "")
     mg = muscle_group || ""
+    query_string = URI.encode_query(if mg != "", do: %{"muscle" => mg}, else: %{})
 
-    params =
-      cond do
-        mg != "" ->
-          %{"muscle" => mg}
+    socket =
+      assign(socket,
+        loading: true,
+        search_form: to_form(%{"name" => name, "muscle_group" => mg}, as: :search_form)
+      )
 
-        true ->
-          %{}
-      end
+    if connected?(socket) do
+      start_async(socket, :search, fn -> search_exercises(query_string, name) end)
+    else
+      socket
+    end
+  end
 
-    query_string = URI.encode_query(params)
-
-    socket = assign(socket, loading: true)
-
-    case ExerciseFetcher.filter_exercises(query_string) do
+  defp search_exercises(query_string, name) do
+    case ExerciseCache.get_filtered(query_string) do
       {:ok, exercises} when is_list(exercises) ->
-        exercises =
-          if name != "" do
-            case ExerciseFetcher.filter_exercises_by_name(exercises, name) do
-              {:ok, filtered} -> filtered
-            end
-          else
-            exercises
+        if name != "" do
+          case ExerciseFetcher.filter_exercises_by_name(exercises, name) do
+            {:ok, filtered} -> {:ok, filtered}
           end
-
-        assign(socket,
-          exercises: exercises,
-          loading: false,
-          search_form: to_form(%{"name" => name, "muscle_group" => mg}, as: :search_form)
-        )
+        else
+          {:ok, exercises}
+        end
 
       {:ok, unexpected_body} ->
-        socket
-        |> put_flash(
-          :error,
-          "Unexpected API data format. Expected a list: #{inspect(unexpected_body)}"
-        )
-        |> assign(loading: false, exercises: [])
+        {:unexpected, unexpected_body}
 
       {:error, reason} ->
-        socket
-        |> put_flash(:error, "Failed to fetch exercises: #{inspect(reason)}")
-        |> assign(
-          exercises: [],
-          loading: false,
-          search_form: to_form(%{"name" => name, "muscle_group" => mg}, as: :search_form)
-        )
+        {:error, reason}
     end
   end
 end

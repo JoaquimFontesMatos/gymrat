@@ -26,6 +26,10 @@ defmodule Gymrat.Workouts.WorkoutExercise do
     ])
     |> validate_required([:workout_id])
     |> validate_exercise_source()
+    |> unique_constraint(:exercise_id,
+      name: :workout_exercises_workout_id_exercise_id_index,
+      message: "is already in this workout"
+    )
   end
 
   defp validate_exercise_source(changeset) do

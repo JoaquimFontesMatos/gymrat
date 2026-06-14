@@ -20,6 +20,7 @@ defmodule Gymrat.Application do
       {DNSCluster, query: Application.get_env(:gymrat, :dns_cluster_query) || :ignore},
       {Oban, Application.fetch_env!(:gymrat, Oban)},
       {Phoenix.PubSub, name: Gymrat.PubSub},
+      Gymrat.ExerciseCache,
       # Start a worker by calling: Gymrat.Worker.start_link(arg)
       # {Gymrat.Worker, arg},
       # Start to serve requests, typically the last entry

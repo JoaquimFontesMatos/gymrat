@@ -3,7 +3,7 @@ defmodule GymratWeb.ExerciseLive.Details do
 
   alias Gymrat.Training.WorkoutExercises
   alias Gymrat.Training.Sets
-  alias Gymrat.ExerciseFetcher
+  alias Gymrat.ExerciseCache
   import GymratWeb.MyComponents
 
   @colors [
@@ -258,44 +258,61 @@ defmodule GymratWeb.ExerciseLive.Details do
             user.id
           )
 
-        {fetched_exercise, fetch_failed?} =
-          if workout_exercise.exercise_id do
-            case ExerciseFetcher.fetch_exercise(workout_exercise.exercise_id) do
-              {:ok, exercise} -> {exercise, false}
-              {:error, _reason} -> {nil, true}
-            end
-          else
-            {nil, false}
-          end
-
         socket =
-          if fetch_failed? do
-            put_flash(
-              socket,
-              :error,
-              "Couldn't load exercise details right now. Your sets and history are still available."
-            )
+          socket
+          |> assign(:plan_id, plan_id)
+          |> assign(:workout_id, workout_id)
+          |> assign(:workout_exercise, workout_exercise)
+          |> assign(:sets, sets)
+          # Rendered nil-safe: the template falls back to custom_name / defaults
+          # until the async fetch (below) fills this in.
+          |> assign(:fetched_exercise, nil)
+          |> assign(:show_modal_set, false)
+          |> assign(:show_modal_exercise, false)
+          |> assign(:is_workout_exercise_from_user, is_workout_exercise_from_user)
+          |> assign(:weight_chart_data, nil)
+          |> assign(:reps_chart_data, nil)
+          |> push_event("load_chart_data", %{})
+
+        # Fetch exercise metadata off the critical path so a slow/unavailable
+        # external API never blocks the page (sets and charts render immediately).
+        socket =
+          if workout_exercise.exercise_id do
+            start_async(socket, :fetch_exercise, fn ->
+              ExerciseCache.get_exercise(workout_exercise.exercise_id)
+            end)
           else
             socket
           end
 
-        {:ok,
-         socket
-         |> assign(:plan_id, plan_id)
-         |> assign(:workout_id, workout_id)
-         |> assign(:workout_exercise, workout_exercise)
-         |> assign(:sets, sets)
-         |> assign(:fetched_exercise, fetched_exercise)
-         |> assign(:show_modal_set, false)
-         |> assign(:show_modal_exercise, false)
-         |> assign(:is_workout_exercise_from_user, is_workout_exercise_from_user)
-         |> assign(:weight_chart_data, nil)
-         |> assign(:reps_chart_data, nil)
-         |> push_event("load_chart_data", %{})}
+        {:ok, socket}
 
       {:error, _reason} ->
         {:error, :not_found}
     end
+  end
+
+  @impl true
+  def handle_async(:fetch_exercise, {:ok, {:ok, exercise}}, socket) do
+    {:noreply, assign(socket, :fetched_exercise, exercise)}
+  end
+
+  def handle_async(:fetch_exercise, {:ok, {:error, _reason}}, socket) do
+    {:noreply,
+     put_flash(
+       socket,
+       :error,
+       "Couldn't load exercise details right now. Your sets and history are still available."
+     )}
+  end
+
+  def handle_async(:fetch_exercise, {:exit, _reason}, socket) do
+    {:noreply,
+     put_flash(
+       socket,
+       :error,
+       "Couldn't load exercise details right now. Your sets and history are still available."
+     )}
   end
 
   defp build_weight_chart_data(exercise_id, custom_name, user_id) do

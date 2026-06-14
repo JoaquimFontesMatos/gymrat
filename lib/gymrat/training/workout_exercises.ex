@@ -61,9 +61,50 @@ defmodule Gymrat.Training.WorkoutExercises do
   end
 
   def create_workout_exercise(attrs \\ %{}) do
-    %WorkoutExercise{}
-    |> WorkoutExercise.changeset(attrs)
-    |> Repo.insert()
+    workout_id = attrs["workout_id"] || attrs[:workout_id]
+    exercise_id = attrs["exercise_id"] || attrs[:exercise_id]
+
+    # The (workout_id, exercise_id) unique index is not filtered on deleted_at,
+    # so a soft-deleted row still blocks re-adding. Look up any existing row
+    # (custom exercises have a nil exercise_id and never collide) and decide:
+    # revive a soft-deleted one, reject an active duplicate, else insert.
+    existing =
+      if exercise_id do
+        Repo.one(
+          from we in WorkoutExercise,
+            where: we.workout_id == ^workout_id and we.exercise_id == ^exercise_id
+        )
+      end
+
+    cond do
+      is_nil(existing) ->
+        %WorkoutExercise{}
+        |> WorkoutExercise.changeset(attrs)
+        |> Repo.insert()
+
+      is_nil(existing.deleted_at) ->
+        {:error, :already_added}
+
+      true ->
+        existing
+        |> change(deleted_at: nil)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Returns a MapSet of `exercise_id`s currently in the workout (active, not
+  soft-deleted) — used to flag exercises already added in the search UI.
+  """
+  def added_exercise_ids(workout_id) do
+    Repo.all(
+      from we in WorkoutExercise,
+        where:
+          we.workout_id == ^workout_id and not is_nil(we.exercise_id) and
+            is_nil(we.deleted_at),
+        select: we.exercise_id
+    )
+    |> MapSet.new()
   end
 
   def update_workout_exercise(%WorkoutExercise{} = workout_exercise, attrs) do
