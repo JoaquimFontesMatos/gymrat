@@ -35,14 +35,15 @@ defmodule GymratWeb.PlanLive.Details do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <.header_with_back_navigate navigate={~p"/"} title={@plan.name} />
+      <h2 class="font-bold text-lg">Workouts</h2>
 
       <ul>
         <%= for workout <- @plan.workouts do %>
           <.list_item navigate={~p"/plans/#{workout.plan_id}/workouts/#{workout.id}"}>
-            <.workout_icon name={resolve_icon(workout)} class="h-12 w-9 shrink-0 text-primary" />
-            <div class="pl-2 flex flex-col justify-start text-start">
+            <.workout_icon name={resolve_icon(workout)} class="w-9 h-12 text-primary shrink-0" />
+            <div class="flex flex-col justify-start pl-2 text-start">
               <span>{workout.name}</span>
-              <span class="text-gray-500 text-xs h-full">
+              <span class="h-full text-gray-500 text-xs">
                 {get_localized_weekdays(Workouts.get_workout_weekdays(workout.id))}
               </span>
             </div>
@@ -54,7 +55,7 @@ defmodule GymratWeb.PlanLive.Details do
             No workouts created yet.
             <a
               :if={@current_user_id == @plan.creator_id}
-              class="underline hover:text-secondary"
+              class="hover:text-secondary underline"
               href={~p"/plans/#{@plan.id}/workouts/new"}
             >
               Create one!
@@ -64,14 +65,14 @@ defmodule GymratWeb.PlanLive.Details do
           <.button
             :if={@current_user_id == @plan.creator_id}
             phx-click="create_workout"
-            class="btn btn-primary w-full"
+            class="w-full btn btn-primary"
           >
             Create a Workout
           </.button>
         <% end %>
       </ul>
 
-      <div class="flex justify-end flex-wrap gap-2" phx-hook="Share" id="plan-actions">
+      <div class="flex flex-wrap justify-end gap-2" phx-hook="Share" id="plan-actions">
         <.button
           class="btn btn-primary btn-soft btn-square"
           phx-click={

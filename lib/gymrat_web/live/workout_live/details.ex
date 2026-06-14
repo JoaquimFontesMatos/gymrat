@@ -36,7 +36,7 @@ defmodule GymratWeb.WorkoutLive.Details do
       <.header_with_back_navigate navigate={~p"/plans/#{@plan_id}"} title={@workout.name} />
 
       <div class="flex items-center gap-2">
-        <.workout_icon name={resolve_icon(@workout)} class="h-20 w-14 text-primary" />
+        <.workout_icon name={resolve_icon(@workout)} class="w-14 h-20 text-primary" />
 
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -55,6 +55,7 @@ defmodule GymratWeb.WorkoutLive.Details do
           {get_localized_weekdays(Workouts.get_workout_weekdays(@workout.id))}
         </span>
       </div>
+      <h2 class="font-bold text-lg">Exercises</h2>
       <ul>
         <%= for exercise <- @workout.workout_exercises do %>
           <.list_item navigate={
@@ -62,7 +63,7 @@ defmodule GymratWeb.WorkoutLive.Details do
           }>
             <.workout_icon
               name={exercise_icon(exercise)}
-              class="h-12 w-9 shrink-0 text-primary"
+              class="w-9 h-12 text-primary shrink-0"
             />
 
             <span class="p-2">
