@@ -88,54 +88,77 @@ defmodule GymratWeb.ExerciseLive.Add do
         <%= if @exercises && !Enum.empty?(@exercises) do %>
           <div class="gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-8">
             <%= for exercise <- @exercises do %>
-              <div class="relative flex flex-col items-between bg-base-100 shadow-sm hover:shadow-md p-4 border rounded-lg transition-shadow">
-                <div>
-                  <div class="flex justify-between items-center gap-2 mb-2 pr-15">
-                    <h2 class="font-semibold text-xl">
-                      {exercise["name"] || "N/A"}
-                    </h2>
+              <div class={[
+                "group relative flex flex-col overflow-hidden rounded-2xl border bg-base-100 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl",
+                if(MapSet.member?(@added_ids, exercise["id"]),
+                  do: "border-success/40 ring-1 ring-success/30",
+                  else: "border-base-300"
+                )
+              ]}>
+                <%!-- Image header --%>
+                <div class="relative h-36 overflow-hidden bg-base-200">
+                  <img
+                    loading="lazy"
+                    src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.jpg"}
+                    data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.png"}
+                    data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.webp"}
+                    alt={exercise["name"] || "Exercise"}
+                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+                  />
+                  <span
+                    :if={MapSet.member?(@added_ids, exercise["id"])}
+                    class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-success px-2.5 py-1 text-xs font-semibold text-success-content shadow"
+                  >
+                    <.icon name="hero-check" class="h-3.5 w-3.5" /> Added
+                  </span>
+                </div>
+
+                <%!-- Body --%>
+                <div class="flex flex-1 flex-col gap-3 p-4">
+                  <h2 class="text-lg font-semibold capitalize leading-tight line-clamp-2">
+                    {exercise["name"] || "N/A"}
+                  </h2>
+
+                  <div
+                    :if={List.wrap(exercise["primaryMuscles"]) != []}
+                    class="flex flex-wrap gap-1.5"
+                  >
                     <span
-                      :if={MapSet.member?(@added_ids, exercise["id"])}
-                      class="top-5 right-0 absolute gap-1 badge badge-success shrink-0"
+                      :for={muscle <- List.wrap(exercise["primaryMuscles"])}
+                      class="rounded-full bg-base-200 px-2.5 py-0.5 text-xs font-medium capitalize text-base-content/70"
                     >
-                      <.icon name="hero-check" class="w-4 h-4" />
+                      {muscle}
                     </span>
                   </div>
 
-                  <div class="mt-2 p-2 rounded">
-                    <img
-                      loading="lazy"
-                      src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.jpg"}
-                      data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.png"}
-                      data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{exercise["id"] }/0.webp"}
-                      alt="Exercise Image"
-                      class="w-full h-24 object-cover"
-                      onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
-                    />
-                    <p>
-                      <strong>Primary Muscles:</strong>
-                      {Enum.join(List.wrap(exercise["primaryMuscles"] || []), ", ")}
-                    </p>
-                    <p><strong>Level:</strong> {exercise["level"] || "N/A"}</p>
-                  </div>
-                </div>
+                  <span
+                    :if={exercise["level"]}
+                    class={[
+                      "inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize",
+                      level_badge_class(exercise["level"])
+                    ]}
+                  >
+                    {exercise["level"]}
+                  </span>
 
-                <div class="m-auto">
-                  <%= if MapSet.member?(@added_ids, exercise["id"]) do %>
-                    <.button type="button" class="btn btn-disabled" disabled>
-                      Added
-                    </.button>
-                  <% else %>
-                    <.button
-                      type="button"
-                      class="btn btn-primary"
-                      phx-click="add_exercise"
-                      phx-value-exercise-id={exercise["id"]}
-                      phx-value-body-part={List.first(List.wrap(exercise["primaryMuscles"]))}
-                    >
-                      Add Exercise
-                    </.button>
-                  <% end %>
+                  <div class="mt-auto pt-2">
+                    <%= if MapSet.member?(@added_ids, exercise["id"]) do %>
+                      <.button type="button" class="btn btn-disabled w-full" disabled>
+                        <.icon name="hero-check" class="h-4 w-4" /> Added
+                      </.button>
+                    <% else %>
+                      <.button
+                        type="button"
+                        class="btn btn-primary w-full"
+                        phx-click="add_exercise"
+                        phx-value-exercise-id={exercise["id"]}
+                        phx-value-body-part={List.first(List.wrap(exercise["primaryMuscles"]))}
+                      >
+                        <.icon name="hero-plus" class="h-4 w-4" /> Add Exercise
+                      </.button>
+                    <% end %>
+                  </div>
                 </div>
               </div>
             <% end %>
@@ -255,6 +278,11 @@ defmodule GymratWeb.ExerciseLive.Add do
       socket
     end
   end
+
+  defp level_badge_class("beginner"), do: "bg-green-200 text-green-800"
+  defp level_badge_class("intermediate"), do: "bg-yellow-200 text-yellow-800"
+  defp level_badge_class("expert"), do: "bg-red-200 text-red-800"
+  defp level_badge_class(_), do: "bg-gray-200 text-gray-600"
 
   defp search_exercises(query_string, name) do
     case ExerciseCache.get_filtered(query_string) do
