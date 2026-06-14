@@ -36,6 +36,8 @@ defmodule GymratWeb.WorkoutLive.Details do
       <.header_with_back_navigate navigate={~p"/plans/#{@plan_id}"} title={@workout.name} />
 
       <div class="flex items-center gap-2">
+        <.workout_icon name={resolve_icon(@workout)} class="h-20 w-14 text-primary" />
+
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -58,20 +60,10 @@ defmodule GymratWeb.WorkoutLive.Details do
           <.list_item navigate={
             ~p"/plans/#{@workout.plan_id}/workouts/#{@workout.id}/exercises/#{exercise.id}"
           }>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-[1.2em] lucide lucide-biceps-flexed-icon lucide-biceps-flexed lucide-dumbbell"
-            >
-              <path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1" /><path d="M15 14a5 5 0 0 0-7.584 2" /><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15" />
-            </svg>
+            <.workout_icon
+              name={exercise_icon(exercise)}
+              class="h-12 w-9 shrink-0 text-primary"
+            />
 
             <span class="p-2">
               {(exercise.exercise_id || exercise.custom_name ||

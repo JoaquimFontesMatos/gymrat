@@ -14,20 +14,7 @@ defmodule GymratWeb.PlanLive.Dashboard do
       <ul>
         <%= for workout <- @todays_workouts do %>
           <.list_item navigate={~p"/plans/#{workout.plan_id}/workouts/#{workout.id}"}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-[1.2em] lucide lucide-dumbbell-icon lucide-dumbbell"
-            >
-              <path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z" /><path d="m2.5 21.5 1.4-1.4" /><path d="m20.1 3.9 1.4-1.4" /><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z" /><path d="m9.6 14.4 4.8-4.8" />
-            </svg>
+            <.workout_icon name={resolve_icon(workout)} class="h-12 w-9 shrink-0 text-primary" />
             <span class="pl-2">
               {workout.name} <span class="opacity-50 text-sm">| {workout.plan.name}</span>
             </span>

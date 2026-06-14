@@ -24,6 +24,36 @@ defmodule GymratWeb.WorkoutLive.Edit do
             phx-mounted={JS.focus()}
           />
 
+          <fieldset class="mt-4">
+            <legend class="text-xs text-gray-400">Icon (defaults to your exercises)</legend>
+            <div class="mt-1 grid grid-cols-3 sm:grid-cols-4 gap-2">
+              <label class="cursor-pointer rounded border p-1 flex flex-col items-center justify-center has-[:checked]:border-primary has-[:checked]:bg-primary/20">
+                <input
+                  type="radio"
+                  name="workout[icon]"
+                  value=""
+                  class="sr-only"
+                  checked={(@form[:icon].value || "") == ""}
+                />
+                <span class="text-sm">Auto</span>
+              </label>
+              <label
+                :for={name <- icon_names()}
+                class="cursor-pointer rounded border p-1 flex flex-col items-center gap-1 has-[:checked]:border-primary has-[:checked]:bg-primary/20"
+              >
+                <input
+                  type="radio"
+                  name="workout[icon]"
+                  value={name}
+                  class="sr-only"
+                  checked={@form[:icon].value == name}
+                />
+                <.workout_icon name={name} class="h-14 w-10 text-primary" />
+                <span class="text-[10px] capitalize text-gray-500">{name}</span>
+              </label>
+            </div>
+          </fieldset>
+
           <label class="mt-4 text-xs text-gray-400">Days to schedule:</label>
           <.input
             field={@form[:selected_weekdays]}

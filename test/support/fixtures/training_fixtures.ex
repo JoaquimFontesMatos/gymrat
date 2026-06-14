@@ -31,7 +31,8 @@ defmodule Gymrat.TrainingFixtures do
   def workout_exercise_fixture(workout, attrs \\ %{}) do
     Repo.insert!(%WorkoutExercise{
       workout_id: workout.id,
-      exercise_id: Map.get(attrs, :exercise_id, "0001")
+      exercise_id: Map.get(attrs, :exercise_id, "0001"),
+      body_part: Map.get(attrs, :body_part)
     })
   end
 

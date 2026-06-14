@@ -7,6 +7,7 @@ defmodule Gymrat.Workouts.WorkoutExercise do
     field :custom_name, :string
     field :custom_description, :string
     field :custom_image_url, :string
+    field :body_part, :string
     field :deleted_at, :naive_datetime
 
     belongs_to :workout, Gymrat.Workouts.Workout
@@ -20,6 +21,7 @@ defmodule Gymrat.Workouts.WorkoutExercise do
       :custom_name,
       :custom_description,
       :custom_image_url,
+      :body_part,
       :workout_id
     ])
     |> validate_required([:workout_id])

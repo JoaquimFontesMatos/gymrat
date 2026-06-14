@@ -11,6 +11,8 @@ defmodule Gymrat.Training.Workouts do
   end
 
   def list_my_workouts_by_weekday(weekday, user_id) do
+    active_exercises_query = from we in WorkoutExercise, where: is_nil(we.deleted_at)
+
     Repo.all(
       from w in Workout,
         join: p in Plan,
@@ -27,6 +29,7 @@ defmodule Gymrat.Training.Workouts do
         where: up.user_id == ^user_id,
         preload: [plan: p]
     )
+    |> Repo.preload(workout_exercises: active_exercises_query)
   end
 
   def get_workout_weekdays(workout_id) do
@@ -42,10 +45,11 @@ defmodule Gymrat.Training.Workouts do
     case Repo.one(query) do
       %Plan{} = plan ->
         active_workouts_query = from w in Workout, where: is_nil(w.deleted_at)
+        active_exercises_query = from we in WorkoutExercise, where: is_nil(we.deleted_at)
 
         {:ok,
          Repo.preload(plan,
-           workouts: {active_workouts_query, [:plan]}
+           workouts: {active_workouts_query, [:plan, workout_exercises: active_exercises_query]}
          )}
 
       nil ->

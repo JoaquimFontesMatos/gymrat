@@ -86,6 +86,7 @@ defmodule GymratWeb do
       import Phoenix.HTML
       # Core UI components
       import GymratWeb.CoreComponents
+      import GymratWeb.WorkoutIcons
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

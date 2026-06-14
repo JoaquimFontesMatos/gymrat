@@ -116,6 +116,7 @@ defmodule GymratWeb.ExerciseLive.Add do
                     class="btn btn-primary"
                     phx-click="add_exercise"
                     phx-value-exercise-id={exercise["id"]}
+                    phx-value-body-part={List.first(List.wrap(exercise["primaryMuscles"]))}
                   >
                     Add Exercise
                   </.button>
@@ -153,10 +154,11 @@ defmodule GymratWeb.ExerciseLive.Add do
   end
 
   @impl true
-  def handle_event("add_exercise", %{"exercise-id" => exercise_id}, socket) do
+  def handle_event("add_exercise", %{"exercise-id" => exercise_id} = params, socket) do
     workout_exercises_params = %{
       "workout_id" => socket.assigns.workout_id,
-      "exercise_id" => exercise_id
+      "exercise_id" => exercise_id,
+      "body_part" => params["body-part"]
     }
 
     case WorkoutExercises.create_workout_exercise(workout_exercises_params) do

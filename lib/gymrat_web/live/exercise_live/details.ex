@@ -34,15 +34,26 @@ defmodule GymratWeb.ExerciseLive.Details do
         <div class="collapse-content text-sm bg-primary text-primary-content peer-checked:bg-base-100/20 peer-checked:text-primary-content">
           <div class="flex flex-col gap-4">
             <%= if @workout_exercise.exercise_id do %>
-              <img
-                loading="lazy"
-                src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.jpg"}
-                data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.png"}
-                data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.webp"}
-                alt="Exercise Image"
-                class="w-full h-56 object-cover"
-                onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
-              />
+              <div class="flex items-center gap-4">
+                <img
+                  loading="lazy"
+                  src={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.jpg"}
+                  data-png={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.png"}
+                  data-webp={"https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/#{@fetched_exercise["id"] }/0.webp"}
+                  alt="Exercise Image"
+                  class="flex-1 min-w-0 h-56 object-cover"
+                  onerror="this.onerror=null; if(this.src.endsWith('.jpg')) {this.src=this.dataset.png;} else if(this.src.endsWith('.png')) {this.src=this.dataset.webp;} else {this.src='/images/default_exercise.jpg';}"
+                />
+                <.workout_icon
+                  name={
+                    exercise_icon(
+                      @workout_exercise.body_part ||
+                        List.first(List.wrap(@fetched_exercise["primaryMuscles"]))
+                    )
+                  }
+                  class="h-40 w-24 shrink-0"
+                />
+              </div>
               <p>
                 <strong>Primary Muscles:</strong>
                 {Enum.join(List.wrap(@fetched_exercise["primaryMuscles"] || []), ", ")}
