@@ -258,14 +258,25 @@ defmodule GymratWeb.ExerciseLive.Details do
             user.id
           )
 
-        fetched_exercise =
+        {fetched_exercise, fetch_failed?} =
           if workout_exercise.exercise_id do
-            {:ok, exercise} =
-              ExerciseFetcher.fetch_exercise(workout_exercise.exercise_id)
-
-            exercise
+            case ExerciseFetcher.fetch_exercise(workout_exercise.exercise_id) do
+              {:ok, exercise} -> {exercise, false}
+              {:error, _reason} -> {nil, true}
+            end
           else
-            nil
+            {nil, false}
+          end
+
+        socket =
+          if fetch_failed? do
+            put_flash(
+              socket,
+              :error,
+              "Couldn't load exercise details right now. Your sets and history are still available."
+            )
+          else
+            socket
           end
 
         {:ok,
