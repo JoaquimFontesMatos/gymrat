@@ -10,12 +10,18 @@ Gymrat is a Phoenix 1.8 / LiveView fitness-tracking app (workout plans, exercise
 
 ## Commands
 
-- `mix setup` — install deps, create/migrate DB, build assets (first-time setup)
-- `mix phx.server` / `iex -S mix phx.server` — run the app at `localhost:4000`
-- `mix test` — run tests (auto-creates and migrates the test DB via the `test` alias)
+Local dev runs through the `justfile`, which wraps `mix` with `infisical run --env=dev` so secrets are loaded from Infisical. Prefer the `just` recipes — running bare `mix` will miss those env vars.
+
+- `just deps-get` — fetch deps (`mix deps.get`)
+- `just db-setup` — drop, create, migrate the dev DB
+- `just run` — run the app at `localhost:4000` (`mix phx.server`)
+- `just iex` — start an IEx session (`iex -S mix`)
+- `just test` — run tests under `MIX_ENV=test`
+
+No `just` recipe exists for these yet — run them via `mix` (wrap with `infisical run --env=dev -- …` if they need secrets):
+
 - `mix test test/path/to/file_test.exs` — single file; `mix test path:LINE` for one test; `mix test --failed` to rerun failures
 - `mix precommit` — **run before finishing any change**: `compile --warning-as-errors`, `deps.unlock --unused`, `format`, `test`
-- `mix ecto.reset` — drop, recreate, migrate, seed
 
 ## Architecture
 
