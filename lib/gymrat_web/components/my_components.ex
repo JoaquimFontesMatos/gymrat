@@ -6,7 +6,6 @@ defmodule GymratWeb.MyComponents do
 
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   attr :class, :string, required: false
-  attr :has_border, :boolean, default: true
   slot :inner_block, required: true
 
   def list_item(%{rest: rest} = assigns) do
@@ -16,19 +15,19 @@ defmodule GymratWeb.MyComponents do
       |> assign_new(:class, fn -> "" end)
 
     ~H"""
-    <li class="bg-base-100">
+    <li>
       <%= if @rest[:href] || @rest[:navigate] || @rest[:patch] do %>
         <.link
           class={
-            "mb-2 rounded flex justify-between group w-full items-stretch " <> @class
+            "relative mb-2 flex justify-between group w-full items-stretch border border-base-300 rounded-xl overflow-hidden transition-shadow shadow-sm" <> @class
           }
           {@rest}
           tabindex="0"
         >
-          <div class="flex justify-start items-center ml-2 py-2">
+          <div class="flex justify-start items-center ml-2 py-2 h-full">
             {render_slot(@inner_block)}
           </div>
-          <span class="flex items-center self-stretch group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 pl-2 w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
+          <span class="absolute inset-y-0 right-0 flex items-center group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 pl-2 w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -44,7 +43,7 @@ defmodule GymratWeb.MyComponents do
           </span>
         </.link>
       <% else %>
-        <div class={"flex justify-between items-center bg-base-100 mb-2 p-2 rounded w-full " <> if(@has_border, do: "border", else: "border border-base-300 rounded-xl transition-shadow shadow-sm")}>
+        <div class="flex justify-between items-center bg-base-100 shadow-sm mb-2 p-2 border border-base-300 rounded-xl w-full transition-shadow">
           {render_slot(@inner_block)}
         </div>
       <% end %>
