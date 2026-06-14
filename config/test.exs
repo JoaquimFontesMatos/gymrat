@@ -1,6 +1,9 @@
 import Config
 config :gymrat, Oban, testing: :manual
 
+# Network-free exercise lookups in tests (see Gymrat.ExerciseFetcherStub).
+config :gymrat, :exercise_fetcher, Gymrat.ExerciseFetcherStub
+
 # Only in tests, remove the complexity from the password hashing algorithm
 config :bcrypt_elixir, :log_rounds, 1
 

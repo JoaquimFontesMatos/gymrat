@@ -29,13 +29,17 @@ defmodule Gymrat.ExerciseCache do
 
   @doc "Fetch a single exercise by id, caching successful lookups."
   def get_exercise(exercise_id) do
-    cached({:exercise, exercise_id}, fn -> ExerciseFetcher.fetch_exercise(exercise_id) end)
+    cached({:exercise, exercise_id}, fn -> fetcher().fetch_exercise(exercise_id) end)
   end
 
   @doc "Fetch the filtered exercise list for a query string, caching successful lookups."
   def get_filtered(query_string) do
-    cached({:filtered, query_string}, fn -> ExerciseFetcher.filter_exercises(query_string) end)
+    cached({:filtered, query_string}, fn -> fetcher().filter_exercises(query_string) end)
   end
+
+  # The upstream fetcher is configurable so tests can swap in a stub instead of
+  # hitting the external API.
+  defp fetcher, do: Application.get_env(:gymrat, :exercise_fetcher, ExerciseFetcher)
 
   defp cached(key, fun) do
     case lookup(key) do
