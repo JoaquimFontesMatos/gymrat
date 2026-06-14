@@ -206,6 +206,26 @@ defmodule Gymrat.Training.Sets do
     end
   end
 
+  @doc """
+  Returns the user's active sets as flat maps (`:inserted_at`, `:exercise`,
+  `:reps`, `:weight`) ordered oldest-first, for data export. `:exercise` is the
+  provider `exercise_id` or, for custom exercises, the `custom_name`.
+  """
+  def list_sets_for_export(user_id) do
+    from(s in Set,
+      join: we in assoc(s, :workout_exercise),
+      where: is_nil(s.deleted_at) and s.user_id == ^user_id,
+      order_by: [asc: s.inserted_at],
+      select: %{
+        inserted_at: s.inserted_at,
+        exercise: fragment("coalesce(?, ?)", we.exercise_id, we.custom_name),
+        reps: s.reps,
+        weight: s.weight
+      }
+    )
+    |> Repo.all()
+  end
+
   def get_training_volume(period \\ :weekly) do
     query =
       from s in Set,

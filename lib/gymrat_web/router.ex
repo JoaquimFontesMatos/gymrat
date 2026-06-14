@@ -98,6 +98,9 @@ defmodule GymratWeb.Router do
     end
 
     post "/users/update-password", UserSessionController, :update_password
+
+    get "/export/sets.csv", ExportController, :sets
+    get "/export/weights.csv", ExportController, :weights
   end
 
   scope "/", GymratWeb do

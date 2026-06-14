@@ -30,6 +30,23 @@ defmodule GymratWeb.UserLive.Profile do
 
         <span>{@current_scope.user.email}</span>
       </div>
+
+      <div class="mt-6 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+        <h2 class="flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-base-content/60">
+          <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> Your Data
+        </h2>
+        <p class="mt-1 text-sm text-base-content/60">
+          Download your logged data as CSV.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <.link href={~p"/export/sets.csv"} download class="btn btn-sm btn-soft btn-primary">
+            <.icon name="hero-document-arrow-down" class="h-4 w-4" /> Sets
+          </.link>
+          <.link href={~p"/export/weights.csv"} download class="btn btn-sm btn-soft btn-primary">
+            <.icon name="hero-document-arrow-down" class="h-4 w-4" /> Weights
+          </.link>
+        </div>
+      </div>
       <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
         <li>
           <.link href={~p"/users/log-out"} method="delete">
