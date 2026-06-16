@@ -18,7 +18,17 @@ defmodule Gymrat.Workouts.Workout do
     workout
     |> cast(attrs, [:name, :icon, :plan_id, :selected_weekdays])
     |> validate_required([:name, :plan_id])
+    |> validate_weekdays()
     |> update_change(:icon, &normalize_icon/1)
+  end
+
+  # Only validate the weekday picker when a value was submitted, so the
+  # blank initial changeset doesn't surface an error before interaction.
+  defp validate_weekdays(changeset) do
+    case fetch_change(changeset, :selected_weekdays) do
+      {:ok, _} -> validate_length(changeset, :selected_weekdays, min: 1)
+      :error -> changeset
+    end
   end
 
   # Treat a blank picker selection ("Auto") as no override.

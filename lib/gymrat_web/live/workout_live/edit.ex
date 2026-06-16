@@ -25,9 +25,9 @@ defmodule GymratWeb.WorkoutLive.Edit do
           />
 
           <fieldset class="mt-4">
-            <legend class="text-xs text-gray-400">Icon (defaults to your exercises)</legend>
-            <div class="mt-1 grid grid-cols-3 sm:grid-cols-4 gap-2">
-              <label class="cursor-pointer rounded border p-1 flex flex-col items-center justify-center has-[:checked]:border-primary has-[:checked]:bg-primary/20">
+            <legend class="text-gray-400 text-xs">Icon (defaults to your exercises)</legend>
+            <div class="gap-2 grid grid-cols-3 sm:grid-cols-4 mt-1">
+              <label class="flex flex-col justify-center items-center has-[:checked]:bg-primary/20 p-1 border has-[:checked]:border-primary rounded cursor-pointer">
                 <input
                   type="radio"
                   name="workout[icon]"
@@ -39,7 +39,7 @@ defmodule GymratWeb.WorkoutLive.Edit do
               </label>
               <label
                 :for={name <- icon_names()}
-                class="cursor-pointer rounded border p-1 flex flex-col items-center gap-1 has-[:checked]:border-primary has-[:checked]:bg-primary/20"
+                class="flex flex-col items-center gap-1 has-[:checked]:bg-primary/20 p-1 border has-[:checked]:border-primary rounded cursor-pointer"
               >
                 <input
                   type="radio"
@@ -48,31 +48,15 @@ defmodule GymratWeb.WorkoutLive.Edit do
                   class="sr-only"
                   checked={@form[:icon].value == name}
                 />
-                <.workout_icon name={name} class="h-14 w-10 text-primary" />
-                <span class="text-[10px] capitalize text-gray-500">{name}</span>
+                <.workout_icon name={name} class="w-10 h-14 text-primary" />
+                <span class="text-[10px] text-gray-500 capitalize">{name}</span>
               </label>
             </div>
           </fieldset>
 
-          <label class="mt-4 text-xs text-gray-400">Days to schedule:</label>
-          <.input
-            field={@form[:selected_weekdays]}
-            type="select"
-            class="select w-full"
-            multiple
-            options={[
-              {"Monday", 1},
-              {"Tuesday", 2},
-              {"Wednesday", 3},
-              {"Thursday", 4},
-              {"Friday", 5},
-              {"Saturday", 6},
-              {"Sunday", 7}
-            ]}
-            required
-          />
+          <.weekday_picker field={@form[:selected_weekdays]} label="Days to schedule" />
 
-          <.button phx-disable-with="Updating workout..." class="btn btn-primary w-full">
+          <.button phx-disable-with="Updating workout..." class="mt-4 w-full btn btn-primary">
             Update the Workout
           </.button>
         </.form>
@@ -120,18 +104,33 @@ defmodule GymratWeb.WorkoutLive.Edit do
       if(is_nil(weekdays), do: [], else: weekdays)
       |> Enum.map(&String.to_integer/1)
 
-    workout_params = Map.delete(workout_params, "selected_weekdays")
+    if normalized_weekdays == [] do
+      changeset =
+        workout
+        |> Workouts.change_workout(Map.put(workout_params, "selected_weekdays", []))
+        |> Map.put(:action, :validate)
 
-    case Workouts.update_workout_with_weekdays(workout, workout_params, normalized_weekdays) do
-      {:ok, updated_workout} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "The workout was updated!")
-         |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{updated_workout.id}")}
+      {:noreply, assign_form(socket, changeset)}
+    else
+      case Workouts.update_workout_with_weekdays(
+             workout,
+             Map.delete(workout_params, "selected_weekdays"),
+             normalized_weekdays
+           ) do
+        {:ok, updated_workout} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "The workout was updated!")
+           |> push_navigate(
+             to: ~p"/plans/#{socket.assigns.plan_id}/workouts/#{updated_workout.id}"
+           )}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        changeset = Ecto.Changeset.put_change(changeset, :selected_weekdays, normalized_weekdays)
-        {:noreply, assign_form(socket, changeset)}
+        {:error, %Ecto.Changeset{} = changeset} ->
+          changeset =
+            Ecto.Changeset.put_change(changeset, :selected_weekdays, normalized_weekdays)
+
+          {:noreply, assign_form(socket, changeset)}
+      end
     end
   end
 

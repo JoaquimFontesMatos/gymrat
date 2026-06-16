@@ -27,7 +27,7 @@ defmodule GymratWeb.MyComponents do
           <div class="flex justify-start items-center ml-2 py-2 h-full">
             {render_slot(@inner_block)}
           </div>
-          <span class="right-0 absolute inset-y-0 flex items-center group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 shadow-sm shadow-primary/50 rounded-r-xl pl-2 w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
+          <span class="right-0 absolute inset-y-0 flex items-center group-active:bg-primary/50 group-focus:bg-primary/50 group-hover:bg-primary/50 opacity-0 group-active:opacity-100 group-focus:opacity-100 group-hover:opacity-100 shadow-primary/50 shadow-sm pl-2 rounded-r-xl w-0 group-active:w-[35%] group-focus:w-[35%] group-hover:w-[35%] overflow-hidden transition-all duration-300 ease-in-out">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -138,5 +138,70 @@ defmodule GymratWeb.MyComponents do
       <h1 class="font-bold text-2xl">{@title}</h1>
     </div>
     """
+  end
+
+  @doc """
+  Renders a weekday picker as a row of toggleable day buttons.
+
+  Backed by a `{:array, :integer}` form field where each weekday is
+  represented by its ISO day number (Monday = 1 … Sunday = 7). Selected
+  days submit under `<field>[]`; when none are selected the param is
+  omitted, matching the previous `<select multiple>` behaviour.
+  """
+  attr :field, Phoenix.HTML.FormField, required: true
+  attr :label, :string, default: "Days to schedule"
+
+  def weekday_picker(assigns) do
+    selected =
+      (assigns.field.value || [])
+      |> List.wrap()
+      |> Enum.map(fn
+        n when is_integer(n) -> n
+        n when is_binary(n) -> String.to_integer(n)
+      end)
+
+    errors =
+      if Phoenix.Component.used_input?(assigns.field),
+        do: assigns.field.errors,
+        else: []
+
+    assigns = assign(assigns, selected: selected, errors: errors)
+
+    ~H"""
+    <fieldset class="mt-4">
+      <legend class="text-xs text-gray-400 mb-1">{@label}</legend>
+      <div class="grid grid-cols-7 gap-1.5">
+        <label
+          :for={{name, num} <- weekday_options()}
+          class="cursor-pointer select-none rounded-lg border border-base-300 py-2.5 flex items-center justify-center text-center transition-colors hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-content has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary"
+        >
+          <input
+            type="checkbox"
+            name={@field.name <> "[]"}
+            value={num}
+            checked={num in @selected}
+            class="sr-only"
+          />
+          <span class="text-xs font-semibold uppercase tracking-wide">{name}</span>
+        </label>
+      </div>
+      <p :for={error <- @errors} class="mt-1.5 flex gap-2 items-center text-sm text-error">
+        <.icon name="hero-exclamation-circle" class="size-5" />
+        {translate_error(error)}
+      </p>
+    </fieldset>
+    """
+  end
+
+  defp weekday_options do
+    [
+      {"Mon", 1},
+      {"Tue", 2},
+      {"Wed", 3},
+      {"Thu", 4},
+      {"Fri", 5},
+      {"Sat", 6},
+      {"Sun", 7}
+    ]
   end
 end
