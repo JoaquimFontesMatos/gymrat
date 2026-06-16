@@ -74,7 +74,15 @@ defmodule GymratWeb.WorkoutIcons do
   """
   def resolve_icon(%{icon: icon}) when is_binary(icon) and icon != "", do: icon
 
-  def resolve_icon(%{workout_exercises: exercises}) when is_list(exercises) do
+  def resolve_icon(%{workout_exercises: exercises}) when is_list(exercises),
+    do: dominant_icon(exercises)
+
+  def resolve_icon(%{routine_exercises: exercises}) when is_list(exercises),
+    do: dominant_icon(exercises)
+
+  def resolve_icon(_), do: "dumbbell"
+
+  defp dominant_icon(exercises) do
     parts =
       exercises
       |> Enum.map(&body_part_of/1)
@@ -91,8 +99,6 @@ defmodule GymratWeb.WorkoutIcons do
         muscle_to_icon(dominant) || "dumbbell"
     end
   end
-
-  def resolve_icon(_), do: "dumbbell"
 
   @doc """
   Resolves the icon for a single exercise from its `body_part` (or a provider

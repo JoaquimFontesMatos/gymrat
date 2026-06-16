@@ -9,6 +9,7 @@ defmodule Gymrat.Plans.Plan do
 
     belongs_to :creator, Gymrat.Accounts.User
     has_many :workouts, Gymrat.Workouts.Workout
+    has_many :routines, Gymrat.Routines.Routine
 
     timestamps()
   end

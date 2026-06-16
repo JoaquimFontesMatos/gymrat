@@ -86,6 +86,23 @@ defmodule GymratWeb.Router do
            SetLive.Edit,
            :edit_set
 
+      live "/plans/:id/routines/new", RoutineLive.Create, :new_routine
+      live "/plans/:plan_id/routines/:routine_id", RoutineLive.Details, :routine_details
+      live "/plans/:plan_id/routines/:routine_id/edit", RoutineLive.Edit, :edit_routine
+      live "/plans/:plan_id/routines/:routine_id/perform", RoutineLive.Perform, :perform_routine
+
+      live "/plans/:plan_id/routines/:routine_id/exercises/new",
+           RoutineExerciseLive.Add,
+           :new_routine_exercise
+
+      live "/plans/:plan_id/routines/:routine_id/exercises/new/custom",
+           RoutineExerciseLive.AddCustom,
+           :new_custom_routine_exercise
+
+      live "/plans/:plan_id/routines/:routine_id/exercises/:exercise_id",
+           RoutineExerciseLive.Details,
+           :routine_exercise_details
+
       live "/weights", WeightLive.Details, :weight_details
       live "/weights/new", WeightLive.Create, :new_weight
       live "/weights/:id/edit", WeightLive.Edit, :edit_weight

@@ -3,6 +3,7 @@ defmodule GymratWeb.PlanLive.Details do
 
   alias Gymrat.Training.Plans
   alias Gymrat.Training.Workouts
+  alias Gymrat.Training.Routines
   import GymratWeb.MyComponents
 
   defp get_localized_weekdays(weekdays) when is_list(weekdays) do
@@ -147,6 +148,43 @@ defmodule GymratWeb.PlanLive.Details do
           </.button>
         <% end %>
       </ul>
+
+      <ul class="mt-6">
+        <h2 class="font-bold text-lg">Routines</h2>
+
+        <%= for routine <- @plan.routines do %>
+          <.list_item navigate={~p"/plans/#{@plan.id}/routines/#{routine.id}"}>
+            <.workout_icon name={resolve_icon(routine)} class="w-9 h-12 text-primary shrink-0" />
+            <div class="flex flex-col justify-start pl-2 text-start">
+              <span>{routine.name}</span>
+              <span class="h-full text-gray-500 text-xs">
+                {length(routine.routine_exercises)} exercises
+              </span>
+            </div>
+          </.list_item>
+        <% end %>
+
+        <%= if Enum.empty?(@plan.routines) do %>
+          <p>
+            No routines created yet.
+            <a
+              :if={@current_user_id == @plan.creator_id}
+              class="hover:text-secondary underline"
+              href={~p"/plans/#{@plan.id}/routines/new"}
+            >
+              Create one!
+            </a>
+          </p>
+        <% else %>
+          <.button
+            :if={@current_user_id == @plan.creator_id}
+            phx-click="create_routine"
+            class="w-full btn btn-primary"
+          >
+            Create a Routine
+          </.button>
+        <% end %>
+      </ul>
     </Layouts.app>
     """
   end
@@ -160,6 +198,7 @@ defmodule GymratWeb.PlanLive.Details do
     # Fetch workouts for this plan
     case Workouts.get_plan_with_workouts(plan_id) do
       {:ok, plan} ->
+        plan = %{plan | routines: Routines.list_plan_routines(plan_id)}
         {:ok, assign(socket, plan: plan, show_modal: false, current_user_id: current_user_id)}
 
       {:error, _reason} ->
@@ -187,6 +226,11 @@ defmodule GymratWeb.PlanLive.Details do
       # Navigate via LiveView push_navigate
       |> push_navigate(to: ~p"/plans/#{socket.assigns.plan.id}/workouts/new")
     }
+  end
+
+  @impl true
+  def handle_event("create_routine", _payload, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/plans/#{socket.assigns.plan.id}/routines/new")}
   end
 
   @impl true
