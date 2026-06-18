@@ -227,5 +227,19 @@ defmodule Gymrat.Training.SetsTest do
 
       assert Sets.get_training_volume(:all_time) == []
     end
+
+    test "get_training_volume/1 excludes time-based (no-reps) routine logs" do
+      user = training_user_fixture()
+
+      timed_set =
+        plan_fixture(user)
+        |> routine_fixture()
+        |> routine_exercise_fixture()
+        |> routine_set_fixture(%{reps_min: nil, duration_seconds: 30})
+
+      routine_set_log_fixture(user, timed_set, %{reps: nil, duration_seconds: 30, weight: 0.0})
+
+      assert Sets.get_training_volume(:all_time) == []
+    end
   end
 end

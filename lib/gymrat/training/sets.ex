@@ -246,6 +246,7 @@ defmodule Gymrat.Training.Sets do
         join: u in assoc(l, :user),
         where: is_nil(u.deleted_at),
         where: is_nil(l.deleted_at),
+        where: not is_nil(l.reps),
         group_by: u.id,
         select: %{
           user: %{id: u.id, name: u.name, color: u.color},
@@ -292,6 +293,7 @@ defmodule Gymrat.Training.Sets do
         where: is_nil(re.deleted_at),
         where: is_nil(r.deleted_at),
         where: is_nil(l.deleted_at),
+        where: not is_nil(l.reps),
         group_by: u.id,
         select: %{
           user: %{id: u.id, name: u.name, color: u.color},

@@ -59,4 +59,28 @@ defmodule Gymrat.Training.RoutineSetLogs do
   def change_log(%RoutineSetLog{} = log, attrs \\ %{}) do
     RoutineSetLog.changeset(log, attrs)
   end
+
+  @doc """
+  Returns the user's logs for a routine exercise (across its planned sets),
+  ordered by day then time, for progress charting. Each row carries the day,
+  reps, weight and duration so callers can build per-metric charts.
+  """
+  def logs_by_day(routine_exercise_id, user_id) do
+    Repo.all(
+      from l in RoutineSetLog,
+        join: rs in assoc(l, :routine_set),
+        where: rs.routine_exercise_id == ^routine_exercise_id,
+        where: is_nil(rs.deleted_at),
+        where: is_nil(l.deleted_at),
+        where: l.user_id == ^user_id,
+        select: %{
+          day: fragment("date(?)", l.inserted_at),
+          inserted_at: l.inserted_at,
+          reps: l.reps,
+          weight: l.weight,
+          duration_seconds: l.duration_seconds
+        },
+        order_by: [asc: fragment("date(?)", l.inserted_at), asc: l.inserted_at]
+    )
+  end
 end

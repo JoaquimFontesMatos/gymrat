@@ -55,4 +55,19 @@ defmodule GymratWeb.RoutineExerciseLive.DetailsTest do
     refute has_element?(lv, "#new_set_form")
     assert render(lv) =~ "5"
   end
+
+  test "renders progress charts from logged history", %{conn: conn, user: user} do
+    {plan, routine, exercise} = exercise_for(user)
+    set = routine_set_fixture(exercise, %{reps_min: 10})
+    routine_set_log_fixture(user, set, %{reps: 10, weight: 50.0})
+
+    {:ok, lv, _html} =
+      live(conn, ~p"/plans/#{plan.id}/routines/#{routine.id}/exercises/#{exercise.id}")
+
+    # The ChartLoader hook pushes this on mount in the browser; simulate it here.
+    render_hook(lv, "load_chart_data", %{})
+
+    assert has_element?(lv, "#weightProgressChart")
+    assert has_element?(lv, "#repsProgressChart")
+  end
 end

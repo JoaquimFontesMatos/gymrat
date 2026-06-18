@@ -1,55 +1,71 @@
 let Hooks = {};
 
-// Native HTML5 drag-and-drop reordering (no JS dependency).
+// Pointer-based drag-and-drop reordering (works with mouse AND touch — no JS
+// dependency).
 //
 // Markup contract on the container (the element carrying phx-hook="Sortable"):
 //   - each reorderable child has [data-sortable-item] and data-id="<id>"
-//   - a drag affordance inside each child has [data-drag-handle]
-// Dragging is enabled only while a handle is pressed, so inputs/buttons in the
-// row stay usable. On drop, the new order of ids is pushed as a "reposition"
-// event ({ids: [...]}). Listeners live on the stable container so they survive
-// LiveView DOM patching when the list re-renders.
+//   - a drag affordance inside each child has [data-drag-handle] (give it the
+//     `touch-none` class so a touch drag doesn't scroll the page)
+// Dragging starts only from a handle, so inputs/buttons in the row stay usable.
+// The list reorders live under the pointer (visual feedback) and the dragged
+// row is highlighted; on release the new order of ids is pushed as a
+// "reposition" event ({ids: [...]}).
 Hooks.Sortable = {
   mounted() {
     const el = this.el;
-    this.dragging = null;
+    const DRAG_CLASSES = ["opacity-60", "ring-2", "ring-primary", "shadow-lg"];
+    this.dragEl = null;
 
-    el.addEventListener("mousedown", (e) => {
+    const ids = () =>
+      Array.from(el.querySelectorAll("[data-sortable-item]")).map((i) => i.dataset.id);
+
+    this.onMove = (e) => {
+      if (!this.dragEl) return;
+      e.preventDefault();
+      const items = Array.from(el.querySelectorAll("[data-sortable-item]"));
+      const over = items.find((it) => {
+        if (it === this.dragEl) return false;
+        const r = it.getBoundingClientRect();
+        return e.clientY >= r.top && e.clientY <= r.bottom;
+      });
+      if (over) {
+        const r = over.getBoundingClientRect();
+        const after = e.clientY > r.top + r.height / 2;
+        el.insertBefore(this.dragEl, after ? over.nextSibling : over);
+      }
+    };
+
+    this.onUp = () => {
+      if (!this.dragEl) return;
+      this.dragEl.classList.remove(...DRAG_CLASSES);
+      this.dragEl = null;
+      document.removeEventListener("pointermove", this.onMove);
+      document.removeEventListener("pointerup", this.onUp);
+      document.removeEventListener("pointercancel", this.onUp);
+      this.pushEvent("reposition", { ids: ids() });
+    };
+
+    this.onDown = (e) => {
       const handle = e.target.closest("[data-drag-handle]");
       if (!handle) return;
       const item = handle.closest("[data-sortable-item]");
-      if (item) item.draggable = true;
-    });
-
-    el.addEventListener("dragstart", (e) => {
-      this.dragging = e.target.closest("[data-sortable-item]");
-      if (this.dragging) e.dataTransfer.effectAllowed = "move";
-    });
-
-    el.addEventListener("dragover", (e) => {
-      if (!this.dragging) return;
+      if (!item) return;
       e.preventDefault();
-      const target = e.target.closest("[data-sortable-item]");
-      if (!target || target === this.dragging) return;
-      const rect = target.getBoundingClientRect();
-      const after = (e.clientY - rect.top) / rect.height > 0.5;
-      el.insertBefore(this.dragging, after ? target.nextSibling : target);
-    });
+      this.dragEl = item;
+      item.classList.add(...DRAG_CLASSES);
+      document.addEventListener("pointermove", this.onMove, { passive: false });
+      document.addEventListener("pointerup", this.onUp);
+      document.addEventListener("pointercancel", this.onUp);
+    };
 
-    el.addEventListener("dragend", (e) => {
-      const item = e.target.closest("[data-sortable-item]");
-      if (item) item.draggable = false;
-    });
+    el.addEventListener("pointerdown", this.onDown);
+  },
 
-    el.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (!this.dragging) return;
-      this.dragging = null;
-      const ids = Array.from(el.querySelectorAll("[data-sortable-item]")).map(
-        (i) => i.dataset.id,
-      );
-      this.pushEvent("reposition", { ids });
-    });
+  destroyed() {
+    document.removeEventListener("pointermove", this.onMove);
+    document.removeEventListener("pointerup", this.onUp);
+    document.removeEventListener("pointercancel", this.onUp);
   },
 };
 
@@ -136,6 +152,12 @@ Hooks.RestTimer = {
     this.interval = null;
     this.display = this.el.querySelector("[data-role=display]");
 
+    // When data-on-complete is set (guided rest screen) and the user has the
+    // auto-skip toggle on, finishing the countdown pushes that event to advance.
+    const onComplete = this.el.dataset.onComplete;
+    const autoskipKey = "gymrat:rest-autoskip";
+    const autoskipOn = () => localStorage.getItem(autoskipKey) === "1";
+
     const format = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     const remaining = () => {
       const end = parseInt(localStorage.getItem(this.key) || "0", 10);
@@ -183,6 +205,7 @@ Hooks.RestTimer = {
         this.beep();
         this.el.classList.add("ring-2", "ring-success");
         setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
+        if (onComplete && autoskipOn()) this.pushEvent(onComplete, {});
       }
     };
 
@@ -197,16 +220,42 @@ Hooks.RestTimer = {
       this.run();
     };
 
+    // Push the end-time forward (the "+15s" control). Extends from whatever is
+    // left, or from now if the countdown already lapsed.
+    this.extend = (seconds) => {
+      const end = Math.max(parseInt(localStorage.getItem(this.key) || "0", 10), Date.now());
+      localStorage.setItem(this.key, String(end + seconds * 1000));
+      render();
+      this.run();
+    };
+
     this.el.querySelectorAll("[data-rest]").forEach((btn) => {
       btn.addEventListener("click", () => this.start(parseInt(btn.dataset.rest, 10)));
     });
-    this.el.querySelector("[data-role=reset]").addEventListener("click", () => this.clear());
+    this.el.querySelectorAll("[data-rest-add]").forEach((btn) => {
+      btn.addEventListener("click", () => this.extend(parseInt(btn.dataset.restAdd, 10)));
+    });
+    // Optional controls — absent on the guided rest screen.
+    const resetBtn = this.el.querySelector("[data-role=reset]");
+    if (resetBtn) resetBtn.addEventListener("click", () => this.clear());
 
-    // Resume an in-progress countdown after a reload; drop a stale one that
-    // already elapsed while we were away (no retroactive beep).
+    // Auto-skip toggle — its choice persists across rest steps and reloads.
+    const autoskipBox = this.el.querySelector("[data-role=autoskip]");
+    if (autoskipBox) {
+      autoskipBox.checked = autoskipOn();
+      autoskipBox.addEventListener("change", () => {
+        localStorage.setItem(autoskipKey, autoskipBox.checked ? "1" : "0");
+      });
+    }
+
+    // Resume an in-progress countdown after a reload; otherwise auto-start from
+    // data-autostart-seconds (guided rest screen) or drop a stale entry.
     render();
+    const autostart = parseInt(this.el.dataset.autostartSeconds || "0", 10);
     if (remaining() > 0) {
       this.run();
+    } else if (autostart > 0) {
+      this.start(autostart);
     } else {
       localStorage.removeItem(this.key);
     }

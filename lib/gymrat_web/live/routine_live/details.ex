@@ -6,6 +6,12 @@ defmodule GymratWeb.RoutineLive.Details do
   import GymratWeb.MyComponents
 
   @doc false
+  def format_set(%{duration_seconds: duration, rest_seconds: rest}) when is_integer(duration) do
+    ["#{duration}s hold", rest_label(rest)]
+    |> Enum.reject(&is_nil/1)
+    |> Enum.join(" · ")
+  end
+
   def format_set(%{reps_min: reps_min, reps_max: reps_max, rest_seconds: rest}) do
     [reps_label(reps_min, reps_max), rest_label(rest)]
     |> Enum.reject(&is_nil/1)
@@ -131,7 +137,7 @@ defmodule GymratWeb.RoutineLive.Details do
           <div :if={@is_routine_owner} class="flex flex-col items-center">
             <span
               data-drag-handle
-              class="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+              class="touch-none select-none cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
               aria-hidden="true"
             >
               <.icon name="hero-bars-3" class="size-4" />

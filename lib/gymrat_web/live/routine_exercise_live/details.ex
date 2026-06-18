@@ -3,13 +3,38 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
 
   alias Gymrat.Training.RoutineExercises
   alias Gymrat.Training.RoutineSets
+  alias Gymrat.Training.RoutineSetLogs
   import GymratWeb.MyComponents
+
+  @colors [
+    %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
+    %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"},
+    %{border: "rgba(239, 68, 68, 0.7)", background: "rgba(239, 68, 68, 0.2)"},
+    %{border: "rgba(234, 179, 8, 0.7)", background: "rgba(234, 179, 8, 0.2)"},
+    %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"}
+  ]
 
   defp exercise_label(exercise) do
     (exercise.exercise_id || exercise.custom_name || "Unknown Exercise")
     |> String.replace("_", " ")
     |> String.capitalize()
   end
+
+  defp set_summary(%{duration_seconds: d} = set) when is_integer(d) do
+    join_parts(["#{d}s hold", rest_label(set.rest_seconds)])
+  end
+
+  defp set_summary(set) do
+    join_parts([reps_label(set.reps_min, set.reps_max), rest_label(set.rest_seconds)])
+  end
+
+  defp join_parts(parts), do: parts |> Enum.reject(&is_nil/1) |> Enum.join(" · ")
+
+  defp reps_label(min, max) when is_integer(max) and max > min, do: "#{min}–#{max} reps"
+  defp reps_label(min, _max), do: "#{min} reps"
+
+  defp rest_label(rest) when is_integer(rest) and rest > 0, do: "#{rest}s rest"
+  defp rest_label(_rest), do: nil
 
   @impl true
   def render(assigns) do
@@ -38,7 +63,7 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
           <span
             :if={@is_owner}
             data-drag-handle
-            class="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing shrink-0"
+            class="touch-none select-none cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing shrink-0"
             aria-hidden="true"
           >
             <.icon name="hero-bars-3" class="size-4" />
@@ -65,6 +90,13 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
                 type="number"
                 label="Max reps"
                 class="input w-20"
+                min="1"
+              />
+              <.input
+                field={@set_forms[set.id][:duration_seconds]}
+                type="number"
+                label="Hold (s)"
+                class="input w-24"
                 min="1"
               />
               <.input
@@ -110,16 +142,7 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
               <.icon name="hero-trash" class="size-4" />
             </.button>
           <% else %>
-            <span class="flex-1">
-              {set.reps_min}
-              <%= if set.reps_max && set.reps_max > set.reps_min do %>
-                –{set.reps_max}
-              <% end %>
-              reps
-              <%= if set.rest_seconds && set.rest_seconds > 0 do %>
-                · {set.rest_seconds}s rest
-              <% end %>
-            </span>
+            <span class="flex-1">{set_summary(set)}</span>
           <% end %>
         </li>
 
@@ -130,6 +153,9 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
 
       <%= if @is_owner do %>
         <h2 class="font-bold text-lg mt-4">Add a Set</h2>
+        <p class="text-gray-500 text-xs mb-2">
+          Fill in reps for a normal set, or a hold for a timed one.
+        </p>
         <.form
           for={@set_form}
           id="new_set_form"
@@ -152,6 +178,13 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
             min="1"
           />
           <.input
+            field={@set_form[:duration_seconds]}
+            type="number"
+            label="Hold (s)"
+            class="input w-24"
+            min="1"
+          />
+          <.input
             field={@set_form[:rest_seconds]}
             type="number"
             label="Rest (s)"
@@ -161,6 +194,45 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
           <.button type="submit" class="btn btn-primary">Add Set</.button>
         </.form>
       <% end %>
+
+      <section class="mt-6">
+        <h2
+          :if={@reps_chart_data || @weight_chart_data || @duration_chart_data}
+          class="mb-2 font-medium text-sm text-base-content/60 uppercase tracking-wide"
+        >
+          Progress
+        </h2>
+        <div
+          id="chart-loader"
+          phx-hook="ChartLoader"
+          class="flex md:flex-row flex-col flex-wrap justify-center items-center gap-4 w-full"
+        >
+          <div :if={@reps_chart_data}>
+            <canvas
+              id="repsProgressChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@reps_chart_data)}
+              data-y-axis-title="Reps"
+            ></canvas>
+          </div>
+          <div :if={@weight_chart_data}>
+            <canvas
+              id="weightProgressChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@weight_chart_data)}
+              data-y-axis-title="Weight (kg)"
+            ></canvas>
+          </div>
+          <div :if={@duration_chart_data}>
+            <canvas
+              id="durationProgressChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@duration_chart_data)}
+              data-y-axis-title="Duration (s)"
+            ></canvas>
+          </div>
+        </div>
+      </section>
     </Layouts.app>
     """
   end
@@ -183,12 +255,27 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
         {:ok,
          socket
          |> assign(plan_id: plan_id, routine_id: routine_id, is_owner: is_owner)
+         |> assign(weight_chart_data: nil, reps_chart_data: nil, duration_chart_data: nil)
          |> assign_exercise(exercise)
-         |> assign_set_form()}
+         |> assign_set_form()
+         |> push_event("load_chart_data", %{})}
 
       {:error, _reason} ->
         {:error, :not_found}
     end
+  end
+
+  @impl true
+  def handle_event("load_chart_data", _params, socket) do
+    user_id = socket.assigns.current_scope.user.id
+    logs = RoutineSetLogs.logs_by_day(socket.assigns.exercise.id, user_id)
+
+    {:noreply,
+     assign(socket,
+       weight_chart_data: build_chart(logs, :weight),
+       reps_chart_data: build_chart(logs, :reps),
+       duration_chart_data: build_chart(logs, :duration_seconds)
+     )}
   end
 
   @impl true
@@ -285,5 +372,46 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
     changeset
     |> Ecto.Changeset.traverse_errors(fn {msg, _} -> msg end)
     |> Enum.map_join("; ", fn {field, msgs} -> "#{field} #{Enum.join(msgs, ", ")}" end)
+  end
+
+  # Builds a Chart.js line dataset for one metric from the logs: one line per
+  # set position (ordered within each day), plotted across days. Returns nil
+  # when no log carries that metric, so the template can hide the canvas.
+  defp build_chart(logs, key) do
+    logs = Enum.filter(logs, &(Map.get(&1, key) != nil))
+
+    if logs == [] do
+      nil
+    else
+      by_day = Enum.group_by(logs, & &1.day)
+
+      days =
+        by_day |> Map.keys() |> Enum.sort(fn a, b -> Date.compare(a, b) != :gt end)
+
+      datasets =
+        by_day
+        |> Enum.flat_map(fn {day, items} ->
+          Enum.with_index(items, fn item, idx ->
+            %{day: day, index: idx, value: Map.get(item, key)}
+          end)
+        end)
+        |> Enum.group_by(& &1.index)
+        |> Enum.sort_by(fn {index, _} -> index end)
+        |> Enum.map(fn {index, points} ->
+          values = Map.new(points, fn %{day: d, value: v} -> {d, v} end)
+          color = Enum.at(@colors, index, List.last(@colors))
+
+          %{
+            label: "Set #{index + 1}",
+            data: Enum.map(days, &Map.get(values, &1)),
+            borderColor: color.border,
+            backgroundColor: color.background,
+            fill: false,
+            tension: 0.3
+          }
+        end)
+
+      %{labels: Enum.map(days, &Calendar.strftime(&1, "%d-%m-%y")), datasets: datasets}
+    end
   end
 end

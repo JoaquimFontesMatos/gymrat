@@ -90,6 +90,7 @@ defmodule Gymrat.TrainingFixtures do
       routine_exercise_id: routine_exercise.id,
       reps_min: Map.get(attrs, :reps_min, 10),
       reps_max: Map.get(attrs, :reps_max),
+      duration_seconds: Map.get(attrs, :duration_seconds),
       rest_seconds: Map.get(attrs, :rest_seconds, 90),
       position: Map.get(attrs, :position, 0)
     })

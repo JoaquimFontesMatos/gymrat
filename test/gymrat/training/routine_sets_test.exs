@@ -31,10 +31,33 @@ defmodule Gymrat.Training.RoutineSetsTest do
       assert "must be greater than or equal to the minimum reps" in errors_on(changeset).reps_max
     end
 
-    test "requires reps_min" do
+    test "requires reps or a duration" do
       re = exercise_for(training_user_fixture())
       assert {:error, changeset} = RoutineSets.add_set(%{"routine_exercise_id" => re.id})
-      assert "can't be blank" in errors_on(changeset).reps_min
+      assert "set a target reps or a duration" in errors_on(changeset).reps_min
+    end
+
+    test "creates a time-based set" do
+      re = exercise_for(training_user_fixture())
+
+      {:ok, set} =
+        RoutineSets.add_set(%{"routine_exercise_id" => re.id, "duration_seconds" => 30})
+
+      assert set.duration_seconds == 30
+      assert is_nil(set.reps_min)
+    end
+
+    test "rejects mixing reps and a duration" do
+      re = exercise_for(training_user_fixture())
+
+      assert {:error, changeset} =
+               RoutineSets.add_set(%{
+                 "routine_exercise_id" => re.id,
+                 "reps_min" => 10,
+                 "duration_seconds" => 30
+               })
+
+      assert "use reps or a duration, not both" in errors_on(changeset).duration_seconds
     end
   end
 
