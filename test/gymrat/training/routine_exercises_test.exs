@@ -69,6 +69,34 @@ defmodule Gymrat.Training.RoutineExercisesTest do
     end
   end
 
+  describe "reposition/2" do
+    test "assigns positions by the given id order" do
+      routine = routine_for(training_user_fixture())
+      a = routine_exercise_fixture(routine, %{exercise_id: "0001", position: 0})
+      b = routine_exercise_fixture(routine, %{exercise_id: "0002", position: 1})
+      c = routine_exercise_fixture(routine, %{exercise_id: "0003", position: 2})
+
+      assert {:ok, _} = RoutineExercises.reposition(routine.id, [c.id, a.id, b.id])
+
+      assert Repo.reload(c).position == 0
+      assert Repo.reload(a).position == 1
+      assert Repo.reload(b).position == 2
+    end
+
+    test "ignores ids from another routine" do
+      routine = routine_for(training_user_fixture())
+      other = routine_for(training_user_fixture())
+      a = routine_exercise_fixture(routine, %{exercise_id: "0001", position: 0})
+      foreign = routine_exercise_fixture(other, %{exercise_id: "0002", position: 7})
+
+      assert {:ok, _} = RoutineExercises.reposition(routine.id, [foreign.id, a.id])
+
+      # `a` is at index 1; the foreign row is untouched.
+      assert Repo.reload(a).position == 1
+      assert Repo.reload(foreign).position == 7
+    end
+  end
+
   describe "is_routine_exercise_from_user/2" do
     test "true only for the plan creator" do
       owner = training_user_fixture()

@@ -24,6 +24,20 @@ defmodule GymratWeb.RoutineLive.CreateTest do
     assert_redirect(lv, ~p"/plans/#{plan.id}/routines/#{routine.id}")
   end
 
+  test "persists selected weekdays", %{conn: conn, user: user} do
+    plan = plan_fixture(user)
+
+    {:ok, lv, _html} = live(conn, ~p"/plans/#{plan.id}/routines/new")
+
+    lv
+    |> form("#routine_form", routine: %{name: "Push A", selected_weekdays: ["1", "5"]})
+    |> render_submit()
+
+    [routine] = Routines.list_plan_routines(plan.id)
+
+    assert Enum.sort(Enum.map(Routines.get_routine_weekdays(routine.id), & &1.weekday)) == [1, 5]
+  end
+
   test "requires authentication" do
     conn = Phoenix.ConnTest.build_conn()
 

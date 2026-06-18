@@ -57,4 +57,31 @@ defmodule Gymrat.Training.RoutineSetsTest do
       assert RoutineSets.list_routine_sets(re.id) == []
     end
   end
+
+  describe "reposition/2" do
+    test "assigns positions by the given id order" do
+      re = exercise_for(training_user_fixture())
+      a = routine_set_fixture(re, %{position: 0})
+      b = routine_set_fixture(re, %{position: 1})
+      c = routine_set_fixture(re, %{position: 2})
+
+      assert {:ok, _} = RoutineSets.reposition(re.id, [b.id, c.id, a.id])
+
+      assert Repo.reload(b).position == 0
+      assert Repo.reload(c).position == 1
+      assert Repo.reload(a).position == 2
+    end
+
+    test "ignores ids from another exercise" do
+      re = exercise_for(training_user_fixture())
+      other = exercise_for(training_user_fixture())
+      a = routine_set_fixture(re, %{position: 0})
+      foreign = routine_set_fixture(other, %{position: 9})
+
+      assert {:ok, _} = RoutineSets.reposition(re.id, [foreign.id, a.id])
+
+      assert Repo.reload(a).position == 1
+      assert Repo.reload(foreign).position == 9
+    end
+  end
 end

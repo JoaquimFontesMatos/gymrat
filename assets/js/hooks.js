@@ -1,5 +1,58 @@
 let Hooks = {};
 
+// Native HTML5 drag-and-drop reordering (no JS dependency).
+//
+// Markup contract on the container (the element carrying phx-hook="Sortable"):
+//   - each reorderable child has [data-sortable-item] and data-id="<id>"
+//   - a drag affordance inside each child has [data-drag-handle]
+// Dragging is enabled only while a handle is pressed, so inputs/buttons in the
+// row stay usable. On drop, the new order of ids is pushed as a "reposition"
+// event ({ids: [...]}). Listeners live on the stable container so they survive
+// LiveView DOM patching when the list re-renders.
+Hooks.Sortable = {
+  mounted() {
+    const el = this.el;
+    this.dragging = null;
+
+    el.addEventListener("mousedown", (e) => {
+      const handle = e.target.closest("[data-drag-handle]");
+      if (!handle) return;
+      const item = handle.closest("[data-sortable-item]");
+      if (item) item.draggable = true;
+    });
+
+    el.addEventListener("dragstart", (e) => {
+      this.dragging = e.target.closest("[data-sortable-item]");
+      if (this.dragging) e.dataTransfer.effectAllowed = "move";
+    });
+
+    el.addEventListener("dragover", (e) => {
+      if (!this.dragging) return;
+      e.preventDefault();
+      const target = e.target.closest("[data-sortable-item]");
+      if (!target || target === this.dragging) return;
+      const rect = target.getBoundingClientRect();
+      const after = (e.clientY - rect.top) / rect.height > 0.5;
+      el.insertBefore(this.dragging, after ? target.nextSibling : target);
+    });
+
+    el.addEventListener("dragend", (e) => {
+      const item = e.target.closest("[data-sortable-item]");
+      if (item) item.draggable = false;
+    });
+
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (!this.dragging) return;
+      this.dragging = null;
+      const ids = Array.from(el.querySelectorAll("[data-sortable-item]")).map(
+        (i) => i.dataset.id,
+      );
+      this.pushEvent("reposition", { ids });
+    });
+  },
+};
+
 Hooks.ChartLoader = {
   mounted() {
     this.pushEvent("load_chart_data", {});

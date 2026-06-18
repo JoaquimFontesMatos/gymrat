@@ -51,6 +51,8 @@ defmodule GymratWeb.RoutineLive.Create do
             </div>
           </fieldset>
 
+          <.weekday_picker field={@form[:selected_weekdays]} label="Days to schedule (optional)" />
+
           <.button phx-disable-with="Creating routine..." class="mt-4 w-full btn btn-primary">
             Create a Routine
           </.button>
@@ -75,9 +77,14 @@ defmodule GymratWeb.RoutineLive.Create do
 
   @impl true
   def handle_event("save", %{"routine" => routine_params}, socket) do
-    routine_params = Map.put(routine_params, "plan_id", socket.assigns.plan_id)
+    weekdays = normalized_weekdays(routine_params)
 
-    case Routines.create_routine(routine_params) do
+    routine_params =
+      routine_params
+      |> Map.delete("selected_weekdays")
+      |> Map.put("plan_id", socket.assigns.plan_id)
+
+    case Routines.create_routine_with_weekdays(routine_params, weekdays) do
       {:ok, routine} ->
         {:noreply,
          socket
@@ -85,14 +92,29 @@ defmodule GymratWeb.RoutineLive.Create do
          |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}/routines/#{routine.id}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = Ecto.Changeset.put_change(changeset, :selected_weekdays, weekdays)
         {:noreply, assign_form(socket, changeset)}
     end
   end
 
   def handle_event("validate", %{"routine" => routine_params}, socket) do
-    changeset = Routines.change_routine_map(routine_params)
-    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
+    changeset =
+      routine_params
+      |> put_weekdays(normalized_weekdays(routine_params))
+      |> Routines.change_routine_map()
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
   end
+
+  defp normalized_weekdays(params) do
+    (Map.get(params, "selected_weekdays") || []) |> Enum.map(&String.to_integer/1)
+  end
+
+  # Keep the picker optional: only feed weekdays into the changeset when some
+  # are selected, so deselecting all doesn't surface a "min 1" error.
+  defp put_weekdays(params, []), do: Map.delete(params, "selected_weekdays")
+  defp put_weekdays(params, weekdays), do: Map.put(params, "selected_weekdays", weekdays)
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, form: to_form(changeset, as: "routine"))

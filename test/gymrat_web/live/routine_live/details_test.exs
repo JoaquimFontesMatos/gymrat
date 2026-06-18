@@ -26,6 +26,15 @@ defmodule GymratWeb.RoutineLive.DetailsTest do
     assert render(lv) =~ "8–12 reps"
   end
 
+  test "shows the scheduled weekdays", %{conn: conn, user: user} do
+    {plan, routine, _a, _b} = routine_with_exercises(user)
+    {:ok, _} = Gymrat.Training.Routines.update_routine_with_weekdays(routine, %{}, [1, 3])
+
+    {:ok, lv, _html} = live(conn, ~p"/plans/#{plan.id}/routines/#{routine.id}")
+
+    assert render(lv) =~ "Monday, Wednesday"
+  end
+
   test "owner can reorder exercises with move_down", %{conn: conn, user: user} do
     {plan, routine, a, b} = routine_with_exercises(user)
 

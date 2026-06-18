@@ -7,7 +7,7 @@ defmodule Gymrat.TrainingFixtures do
   alias Gymrat.Repo
   alias Gymrat.Plans.Plan
   alias Gymrat.Workouts.{Workout, WorkoutExercise}
-  alias Gymrat.Routines.{Routine, RoutineExercise, RoutineSet}
+  alias Gymrat.Routines.{Routine, RoutineExercise, RoutineSet, RoutineSetLog}
   alias Gymrat.Training.Sets
 
   import Gymrat.AccountsFixtures, only: [unconfirmed_user_fixture: 0]
@@ -93,6 +93,25 @@ defmodule Gymrat.TrainingFixtures do
       rest_seconds: Map.get(attrs, :rest_seconds, 90),
       position: Map.get(attrs, :position, 0)
     })
+  end
+
+  @doc """
+  Logs actual performance for `user` against a planned `routine_set`. Supports
+  `:reps`, `:weight` and `:inserted_at` so volume tests can place a log inside
+  or outside a scoreboard period.
+  """
+  def routine_set_log_fixture(user, routine_set, attrs \\ %{}) do
+    Repo.insert!(
+      struct(
+        %RoutineSetLog{
+          user_id: user.id,
+          routine_set_id: routine_set.id,
+          reps: 10,
+          weight: 50.0
+        },
+        attrs
+      )
+    )
   end
 
   @doc """

@@ -27,12 +27,22 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
 
       <h2 class="font-bold text-lg mt-2">Planned Sets</h2>
 
-      <ul id="routine-sets" class="flex flex-col gap-2">
+      <ul id="routine-sets" phx-hook="Sortable" class="flex flex-col gap-2">
         <li
           :for={{set, index} <- Enum.with_index(@exercise.routine_sets)}
           id={"routine-set-#{set.id}"}
+          data-sortable-item
+          data-id={set.id}
           class="flex items-center gap-2 rounded-lg border border-base-300 p-2"
         >
+          <span
+            :if={@is_owner}
+            data-drag-handle
+            class="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing shrink-0"
+            aria-hidden="true"
+          >
+            <.icon name="hero-bars-3" class="size-4" />
+          </span>
           <span class="font-semibold w-12 shrink-0">Set {index + 1}</span>
 
           <%= if @is_owner do %>
@@ -225,6 +235,16 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
 
   def handle_event("move_down", %{"id" => id}, socket),
     do: with_owned_set(socket, id, &RoutineSets.move_set(&1, :down))
+
+  def handle_event("reposition", %{"ids" => ids}, socket) do
+    if socket.assigns.is_owner do
+      ordered_ids = Enum.map(ids, &String.to_integer/1)
+      RoutineSets.reposition(socket.assigns.exercise.id, ordered_ids)
+      {:noreply, reload_exercise(socket)}
+    else
+      {:noreply, socket}
+    end
+  end
 
   defp with_owned_set(socket, id, fun) do
     if socket.assigns.is_owner do

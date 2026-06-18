@@ -34,6 +34,27 @@ defmodule GymratWeb.RoutineLive.Details do
     |> String.capitalize()
   end
 
+  defp get_localized_weekdays([]), do: "No weekday"
+
+  defp get_localized_weekdays(weekdays) when is_list(weekdays) do
+    weekdays
+    |> Enum.sort_by(& &1.weekday)
+    |> Enum.map_join(", ", &weekday_to_string(&1.weekday))
+  end
+
+  defp weekday_to_string(weekday) do
+    case weekday do
+      1 -> "Monday"
+      2 -> "Tuesday"
+      3 -> "Wednesday"
+      4 -> "Thursday"
+      5 -> "Friday"
+      6 -> "Saturday"
+      7 -> "Sunday"
+      _ -> "No weekday"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -71,6 +92,21 @@ defmodule GymratWeb.RoutineLive.Details do
 
       <div class="flex items-center gap-2">
         <.workout_icon name={resolve_icon(@routine)} class="w-14 h-20 text-primary" />
+
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="fill-primary/50 size-[1.2em]"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M6.75 2.25A.75.75 0 0 1 7.5 3v1.5h9V3A.75.75 0 0 1 18 3v1.5h.75a3 3 0 0 1 3 3v11.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3H6V3a.75.75 0 0 1 .75-.75Zm13.5 9a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5Z"
+            clip-rule="evenodd"
+          />
+        </svg>
+
+        <span class="text-gray-500">{get_localized_weekdays(@weekdays)}</span>
       </div>
 
       <div class="flex justify-between items-center">
@@ -84,13 +120,22 @@ defmodule GymratWeb.RoutineLive.Details do
         </.link>
       </div>
 
-      <ul id="routine-exercises" class="flex flex-col gap-2">
+      <ul id="routine-exercises" phx-hook="Sortable" class="flex flex-col gap-2">
         <li
           :for={{exercise, index} <- Enum.with_index(@routine.routine_exercises)}
           id={"routine-exercise-#{exercise.id}"}
+          data-sortable-item
+          data-id={exercise.id}
           class="flex items-center gap-2 rounded-lg border border-base-300 p-2"
         >
-          <div :if={@is_routine_owner} class="flex flex-col">
+          <div :if={@is_routine_owner} class="flex flex-col items-center">
+            <span
+              data-drag-handle
+              class="cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+              aria-hidden="true"
+            >
+              <.icon name="hero-bars-3" class="size-4" />
+            </span>
             <button
               type="button"
               class="btn btn-ghost btn-xs btn-square"
@@ -168,6 +213,7 @@ defmodule GymratWeb.RoutineLive.Details do
          assign(socket,
            plan_id: plan_id,
            routine: routine,
+           weekdays: Routines.get_routine_weekdays(routine_id),
            show_modal: false,
            is_routine_owner: is_routine_owner
          )}
@@ -201,6 +247,17 @@ defmodule GymratWeb.RoutineLive.Details do
 
   def handle_event("move_up", %{"id" => id}, socket), do: move(socket, id, :up)
   def handle_event("move_down", %{"id" => id}, socket), do: move(socket, id, :down)
+
+  def handle_event("reposition", %{"ids" => ids}, socket) do
+    if socket.assigns.is_routine_owner do
+      ordered_ids = Enum.map(ids, &String.to_integer/1)
+      RoutineExercises.reposition(socket.assigns.routine.id, ordered_ids)
+      {:ok, routine} = Routines.get_routine(socket.assigns.routine.id)
+      {:noreply, assign(socket, :routine, routine)}
+    else
+      {:noreply, socket}
+    end
+  end
 
   def handle_event("delete_routine", _payload, socket) do
     case Routines.soft_delete_routine(socket.assigns.routine) do

@@ -165,4 +165,67 @@ defmodule Gymrat.Training.SetsTest do
       assert Sets.get_training_volume(:all_time) == []
     end
   end
+
+  # Builds plan → routine → routine_exercise → routine_set under `plan`.
+  defp routine_set_for(plan) do
+    plan
+    |> routine_fixture()
+    |> routine_exercise_fixture()
+    |> routine_set_fixture()
+  end
+
+  describe "routine volume integration" do
+    test "get_training_volume/1 sums workout and routine logs per user" do
+      user = training_user_fixture()
+      plan = plan_fixture(user)
+
+      we = plan |> workout_fixture() |> workout_exercise_fixture()
+      set_fixture(user, we, %{reps: 10, weight: 100.0})
+
+      rs = routine_set_for(plan)
+      routine_set_log_fixture(user, rs, %{reps: 10, weight: 50.0})
+
+      assert [%{user: %{id: id}, volume: 1500.0}] = Sets.get_training_volume(:all_time)
+      assert id == user.id
+    end
+
+    test "get_training_volume_for_plan/2 counts routine logs for that plan only" do
+      u1 = training_user_fixture()
+      u2 = training_user_fixture()
+      plan = plan_fixture(u1)
+
+      rs = routine_set_for(plan)
+      routine_set_log_fixture(u1, rs, %{reps: 10, weight: 100.0})
+      routine_set_log_fixture(u2, rs, %{reps: 10, weight: 50.0})
+
+      # u1's routine work on another plan must not leak into this board.
+      other_rs = routine_set_for(plan_fixture(u1))
+      routine_set_log_fixture(u1, other_rs, %{reps: 10, weight: 999.0})
+
+      result = Sets.get_training_volume_for_plan(plan.id, :all_time)
+      assert Enum.map(result, &{&1.user.id, &1.volume}) == [{u1.id, 1000.0}, {u2.id, 500.0}]
+    end
+
+    test "get_training_volume/1 respects the period for routine logs" do
+      user = training_user_fixture()
+      rs = routine_set_for(plan_fixture(user))
+
+      routine_set_log_fixture(user, rs, %{reps: 10, weight: 10.0, inserted_at: days_ago(40)})
+
+      assert Sets.get_training_volume(:weekly) == []
+      assert [%{volume: 100.0}] = Sets.get_training_volume(:all_time)
+    end
+
+    test "get_training_volume/1 excludes soft-deleted routine logs" do
+      user = training_user_fixture()
+      rs = routine_set_for(plan_fixture(user))
+      log = routine_set_log_fixture(user, rs, %{reps: 10, weight: 10.0})
+
+      log
+      |> Ecto.Changeset.change(deleted_at: NaiveDateTime.local_now())
+      |> Repo.update!()
+
+      assert Sets.get_training_volume(:all_time) == []
+    end
+  end
 end

@@ -3,6 +3,7 @@ defmodule GymratWeb.PlanLive.Dashboard do
 
   alias Gymrat.Training.Plans
   alias Gymrat.Training.Workouts
+  alias Gymrat.Training.Routines
   import GymratWeb.MyComponents
 
   @impl true
@@ -27,6 +28,26 @@ defmodule GymratWeb.PlanLive.Dashboard do
           </p>
         <% end %>
       </ul>
+
+      <h1 class="mt-8 font-bold text-2xl">Today's Routines</h1>
+
+      <ul>
+        <%= for routine <- @todays_routines do %>
+          <.list_item navigate={~p"/plans/#{routine.plan_id}/routines/#{routine.id}"}>
+            <.workout_icon name={resolve_icon(routine)} class="h-12 w-9 shrink-0 text-primary" />
+            <span class="pl-2">
+              {routine.name} <span class="opacity-50 text-sm">| {routine.plan.name}</span>
+            </span>
+          </.list_item>
+        <% end %>
+
+        <%= if Enum.empty?(@todays_routines) do %>
+          <p>
+            No routines today.
+          </p>
+        <% end %>
+      </ul>
+
       <h1 class="mt-8 font-bold text-2xl">{@current_scope.user.name}'s Plans</h1>
 
       <ul>
@@ -73,8 +94,14 @@ defmodule GymratWeb.PlanLive.Dashboard do
     weekday = Date.day_of_week(date)
 
     todays_workouts = Workouts.list_my_workouts_by_weekday(weekday, user.id)
+    todays_routines = Routines.list_my_routines_by_weekday(weekday, user.id)
 
-    {:ok, assign(socket, plans: plans, todays_workouts: todays_workouts)}
+    {:ok,
+     assign(socket,
+       plans: plans,
+       todays_workouts: todays_workouts,
+       todays_routines: todays_routines
+     )}
   end
 
   @impl true

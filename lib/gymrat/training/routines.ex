@@ -3,8 +3,8 @@ defmodule Gymrat.Training.Routines do
   import Ecto.Changeset
 
   alias Gymrat.Repo
-  alias Gymrat.Plans.Plan
-  alias Gymrat.Routines.{Routine, RoutineExercise, RoutineSet}
+  alias Gymrat.Plans.{Plan, UserPlans}
+  alias Gymrat.Routines.{Routine, RoutineExercise, RoutineSet, RoutineWeekday}
 
   @doc """
   Loads a plan together with its active routines, each routine preloading its
@@ -36,6 +36,36 @@ defmodule Gymrat.Training.Routines do
         order_by: r.inserted_at
     )
     |> Repo.preload(routine_exercises: active_exercises)
+  end
+
+  @doc """
+  Lists the routines scheduled on `weekday` (ISO day number) across the plans
+  the user belongs to, each with its active exercises preloaded. Mirrors
+  `Workouts.list_my_workouts_by_weekday/2`.
+  """
+  def list_my_routines_by_weekday(weekday, user_id) do
+    active_exercises = from re in RoutineExercise, where: is_nil(re.deleted_at)
+
+    Repo.all(
+      from r in Routine,
+        join: p in Plan,
+        on: r.plan_id == p.id,
+        join: up in UserPlans,
+        on: up.plan_id == p.id,
+        join: rw in RoutineWeekday,
+        on: rw.routine_id == r.id,
+        where: rw.weekday == ^weekday,
+        where: is_nil(r.deleted_at),
+        where: is_nil(p.deleted_at),
+        where: is_nil(up.deleted_at),
+        where: up.user_id == ^user_id,
+        preload: [plan: p]
+    )
+    |> Repo.preload(routine_exercises: active_exercises)
+  end
+
+  def get_routine_weekdays(routine_id) do
+    Repo.all(from rw in RoutineWeekday, where: rw.routine_id == ^routine_id)
   end
 
   @doc """
@@ -76,10 +106,42 @@ defmodule Gymrat.Training.Routines do
     |> Repo.insert()
   end
 
+  def create_routine_with_weekdays(routine_params, weekdays) do
+    case create_routine(routine_params) do
+      {:ok, routine} ->
+        replace_weekdays(routine.id, weekdays)
+        {:ok, routine}
+
+      error ->
+        error
+    end
+  end
+
   def update_routine(%Routine{} = routine, attrs) do
     routine
     |> Routine.changeset(attrs)
     |> Repo.update()
+  end
+
+  def update_routine_with_weekdays(%Routine{} = routine, routine_params, new_weekdays) do
+    case update_routine(routine, routine_params) do
+      {:ok, updated_routine} ->
+        replace_weekdays(updated_routine.id, new_weekdays)
+        {:ok, updated_routine}
+
+      error ->
+        error
+    end
+  end
+
+  defp replace_weekdays(routine_id, weekdays) do
+    Repo.delete_all(from rw in RoutineWeekday, where: rw.routine_id == ^routine_id)
+
+    Enum.each(weekdays, fn weekday_number ->
+      %RoutineWeekday{}
+      |> RoutineWeekday.changeset(%{routine_id: routine_id, weekday: weekday_number})
+      |> Repo.insert!()
+    end)
   end
 
   def soft_delete_routine(%Routine{} = routine) do

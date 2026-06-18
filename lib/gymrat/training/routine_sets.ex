@@ -57,6 +57,25 @@ defmodule Gymrat.Training.RoutineSets do
     end
   end
 
+  @doc """
+  Sets each active set's `position` to its index in `ordered_ids`, scoped to
+  `routine_exercise_id`. Backs drag-and-drop reordering.
+  """
+  def reposition(routine_exercise_id, ordered_ids) do
+    Repo.transaction(fn ->
+      ordered_ids
+      |> Enum.with_index()
+      |> Enum.each(fn {id, index} ->
+        from(rs in RoutineSet,
+          where:
+            rs.id == ^id and rs.routine_exercise_id == ^routine_exercise_id and
+              is_nil(rs.deleted_at)
+        )
+        |> Repo.update_all(set: [position: index])
+      end)
+    end)
+  end
+
   def change_routine_set(%RoutineSet{} = routine_set, attrs \\ %{}) do
     RoutineSet.changeset(routine_set, attrs)
   end

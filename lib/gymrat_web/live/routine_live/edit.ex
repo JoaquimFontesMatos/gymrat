@@ -54,6 +54,8 @@ defmodule GymratWeb.RoutineLive.Edit do
             </div>
           </fieldset>
 
+          <.weekday_picker field={@form[:selected_weekdays]} label="Days to schedule (optional)" />
+
           <.button phx-disable-with="Updating routine..." class="mt-4 w-full btn btn-primary">
             Update the Routine
           </.button>
@@ -70,10 +72,12 @@ defmodule GymratWeb.RoutineLive.Edit do
 
     case Routines.get_routine(routine_id) do
       {:ok, routine} ->
+        weekdays = Routines.get_routine_weekdays(routine_id) |> Enum.map(& &1.weekday)
+
         socket =
           socket
           |> assign(plan_id: plan_id, routine: routine)
-          |> assign_form(Routines.change_routine(routine))
+          |> assign_form(Routines.change_routine(routine, %{"selected_weekdays" => weekdays}))
 
         {:ok, socket}
 
@@ -84,7 +88,10 @@ defmodule GymratWeb.RoutineLive.Edit do
 
   @impl true
   def handle_event("save", %{"routine" => routine_params}, socket) do
-    case Routines.update_routine(socket.assigns.routine, routine_params) do
+    weekdays = normalized_weekdays(routine_params)
+    routine_params = Map.delete(routine_params, "selected_weekdays")
+
+    case Routines.update_routine_with_weekdays(socket.assigns.routine, routine_params, weekdays) do
       {:ok, routine} ->
         {:noreply,
          socket
@@ -92,14 +99,28 @@ defmodule GymratWeb.RoutineLive.Edit do
          |> push_navigate(to: ~p"/plans/#{socket.assigns.plan_id}/routines/#{routine.id}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
+        changeset = Ecto.Changeset.put_change(changeset, :selected_weekdays, weekdays)
         {:noreply, assign_form(socket, changeset)}
     end
   end
 
   def handle_event("validate", %{"routine" => routine_params}, socket) do
-    changeset = Routines.change_routine(socket.assigns.routine, routine_params)
-    {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
+    changeset =
+      socket.assigns.routine
+      |> Routines.change_routine(
+        put_weekdays(routine_params, normalized_weekdays(routine_params))
+      )
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
   end
+
+  defp normalized_weekdays(params) do
+    (Map.get(params, "selected_weekdays") || []) |> Enum.map(&String.to_integer/1)
+  end
+
+  defp put_weekdays(params, []), do: Map.delete(params, "selected_weekdays")
+  defp put_weekdays(params, weekdays), do: Map.put(params, "selected_weekdays", weekdays)
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     assign(socket, form: to_form(changeset, as: "routine"))
