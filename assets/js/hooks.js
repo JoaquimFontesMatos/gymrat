@@ -125,15 +125,24 @@ Hooks.Chart = {
   },
 };
 
+// The countdown is stored as an absolute end-time (epoch ms) in localStorage,
+// so it survives a page reload or navigation and is recomputed each tick rather
+// than decremented — which also keeps it accurate when the tab is backgrounded
+// (setInterval is throttled there). Override the storage key with
+// data-timer-key if a page needs an independent timer.
 Hooks.RestTimer = {
   mounted() {
-    this.remaining = 0;
+    this.key = this.el.dataset.timerKey || "gymrat:rest-timer";
     this.interval = null;
     this.display = this.el.querySelector("[data-role=display]");
 
     const format = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    const remaining = () => {
+      const end = parseInt(localStorage.getItem(this.key) || "0", 10);
+      return Math.max(Math.ceil((end - Date.now()) / 1000), 0);
+    };
     const render = () => {
-      this.display.textContent = format(Math.max(this.remaining, 0));
+      this.display.textContent = format(remaining());
     };
 
     this.stop = () => {
@@ -141,6 +150,12 @@ Hooks.RestTimer = {
         clearInterval(this.interval);
         this.interval = null;
       }
+    };
+
+    this.clear = () => {
+      this.stop();
+      localStorage.removeItem(this.key);
+      render();
     };
 
     this.beep = () => {
@@ -160,32 +175,41 @@ Hooks.RestTimer = {
       }
     };
 
-    this.start = (seconds) => {
-      this.stop();
-      this.remaining = seconds;
+    const tick = () => {
       render();
-      this.interval = setInterval(() => {
-        this.remaining -= 1;
-        render();
-        if (this.remaining <= 0) {
-          this.stop();
-          this.beep();
-          this.el.classList.add("ring-2", "ring-success");
-          setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
-        }
-      }, 1000);
+      if (remaining() <= 0) {
+        this.stop();
+        localStorage.removeItem(this.key);
+        this.beep();
+        this.el.classList.add("ring-2", "ring-success");
+        setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
+      }
+    };
+
+    this.run = () => {
+      this.stop();
+      this.interval = setInterval(tick, 250);
+    };
+
+    this.start = (seconds) => {
+      localStorage.setItem(this.key, String(Date.now() + seconds * 1000));
+      render();
+      this.run();
     };
 
     this.el.querySelectorAll("[data-rest]").forEach((btn) => {
       btn.addEventListener("click", () => this.start(parseInt(btn.dataset.rest, 10)));
     });
-    this.el.querySelector("[data-role=reset]").addEventListener("click", () => {
-      this.stop();
-      this.remaining = 0;
-      render();
-    });
+    this.el.querySelector("[data-role=reset]").addEventListener("click", () => this.clear());
 
+    // Resume an in-progress countdown after a reload; drop a stale one that
+    // already elapsed while we were away (no retroactive beep).
     render();
+    if (remaining() > 0) {
+      this.run();
+    } else {
+      localStorage.removeItem(this.key);
+    }
   },
 
   destroyed() {
