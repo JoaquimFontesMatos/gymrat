@@ -14,6 +14,10 @@ config :gymrat, :rapidapi,
   host: System.get_env("RAPIDAPI_HOST"),
   key: System.get_env("RAPIDAPI_KEY")
 
+# Persist the exercise cache to disk so restarting the dev server reuses
+# previously-fetched exercises instead of re-hitting the (flaky) ExerciseDB API.
+config :gymrat, :exercise_cache_file, Path.expand("../priv/cache/exercise_cache.dets", __DIR__)
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

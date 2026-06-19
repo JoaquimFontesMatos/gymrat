@@ -4,6 +4,7 @@ defmodule Gymrat.Training.Sets do
 
   alias Gymrat.Repo
   alias Gymrat.Workouts.{WorkoutExercise, Set}
+  alias Gymrat.Routines.RoutineSetLog
 
   def list_sets(user_id) do
     Repo.all(from s in Set, where: s.user_id == ^user_id and is_nil(s.deleted_at))
@@ -227,7 +228,7 @@ defmodule Gymrat.Training.Sets do
   end
 
   def get_training_volume(period \\ :weekly) do
-    query =
+    workout_query =
       from s in Set,
         join: u in assoc(s, :user),
         join: we in assoc(s, :workout_exercise),
@@ -236,28 +237,35 @@ defmodule Gymrat.Training.Sets do
         where: is_nil(s.deleted_at),
         group_by: u.id,
         select: %{
-          user: %{
-            id: u.id,
-            name: u.name,
-            color: u.color
-          },
+          user: %{id: u.id, name: u.name, color: u.color},
           volume: sum(s.reps * s.weight)
-        },
-        order_by: [desc: sum(s.reps * s.weight)],
-        limit: 50
+        }
 
-    query
-    |> filter_by_period(period)
-    |> Repo.all()
+    routine_query =
+      from l in RoutineSetLog,
+        join: u in assoc(l, :user),
+        where: is_nil(u.deleted_at),
+        where: is_nil(l.deleted_at),
+        where: not is_nil(l.reps),
+        group_by: u.id,
+        select: %{
+          user: %{id: u.id, name: u.name, color: u.color},
+          volume: sum(l.reps * l.weight)
+        }
+
+    merge_volumes(
+      Repo.all(filter_by_period(workout_query, period)),
+      Repo.all(filter_by_period(routine_query, period))
+    )
   end
 
   @doc """
   Like `get_training_volume/1`, but scoped to a single plan: ranks users by the
-  volume they've logged on that plan's workouts. Powers the per-plan
-  ("group") leaderboard.
+  volume they've logged on that plan's workouts *and* routines. Powers the
+  per-plan ("group") leaderboard.
   """
   def get_training_volume_for_plan(plan_id, period \\ :weekly) do
-    query =
+    workout_query =
       from s in Set,
         join: u in assoc(s, :user),
         join: we in assoc(s, :workout_exercise),
@@ -269,19 +277,219 @@ defmodule Gymrat.Training.Sets do
         where: is_nil(s.deleted_at),
         group_by: u.id,
         select: %{
-          user: %{
-            id: u.id,
-            name: u.name,
-            color: u.color
-          },
+          user: %{id: u.id, name: u.name, color: u.color},
           volume: sum(s.reps * s.weight)
-        },
-        order_by: [desc: sum(s.reps * s.weight)],
-        limit: 50
+        }
 
-    query
-    |> filter_by_period(period)
-    |> Repo.all()
+    routine_query =
+      from l in RoutineSetLog,
+        join: u in assoc(l, :user),
+        join: rs in assoc(l, :routine_set),
+        join: re in assoc(rs, :routine_exercise),
+        join: r in assoc(re, :routine),
+        where: r.plan_id == ^plan_id,
+        where: is_nil(u.deleted_at),
+        where: is_nil(rs.deleted_at),
+        where: is_nil(re.deleted_at),
+        where: is_nil(r.deleted_at),
+        where: is_nil(l.deleted_at),
+        where: not is_nil(l.reps),
+        group_by: u.id,
+        select: %{
+          user: %{id: u.id, name: u.name, color: u.color},
+          volume: sum(l.reps * l.weight)
+        }
+
+    merge_volumes(
+      Repo.all(filter_by_period(workout_query, period)),
+      Repo.all(filter_by_period(routine_query, period))
+    )
+  end
+
+  @doc """
+  Returns the distinct exercises that have at least one logged set (across both
+  workouts and routines), so the per-exercise scoreboard picker only lists
+  exercises people have actually trained — avoiding a round-trip to the flaky
+  ExerciseDB catalog. Optionally scoped to a single plan. Each entry is a
+  `%{exercise_id, custom_name}` where exactly one of the two is set.
+  """
+  def list_scored_exercises(plan_id \\ nil)
+
+  def list_scored_exercises(nil) do
+    workout_query =
+      from s in Set,
+        join: we in assoc(s, :workout_exercise),
+        where: is_nil(we.deleted_at),
+        where: is_nil(s.deleted_at),
+        distinct: true,
+        select: %{exercise_id: we.exercise_id, custom_name: we.custom_name}
+
+    routine_query =
+      from l in RoutineSetLog,
+        join: rs in assoc(l, :routine_set),
+        join: re in assoc(rs, :routine_exercise),
+        where: is_nil(rs.deleted_at),
+        where: is_nil(re.deleted_at),
+        where: is_nil(l.deleted_at),
+        distinct: true,
+        select: %{exercise_id: re.exercise_id, custom_name: re.custom_name}
+
+    merge_exercises(Repo.all(workout_query), Repo.all(routine_query))
+  end
+
+  def list_scored_exercises(plan_id) do
+    workout_query =
+      from s in Set,
+        join: we in assoc(s, :workout_exercise),
+        join: w in assoc(we, :workout),
+        where: w.plan_id == ^plan_id,
+        where: is_nil(we.deleted_at),
+        where: is_nil(w.deleted_at),
+        where: is_nil(s.deleted_at),
+        distinct: true,
+        select: %{exercise_id: we.exercise_id, custom_name: we.custom_name}
+
+    routine_query =
+      from l in RoutineSetLog,
+        join: rs in assoc(l, :routine_set),
+        join: re in assoc(rs, :routine_exercise),
+        join: r in assoc(re, :routine),
+        where: r.plan_id == ^plan_id,
+        where: is_nil(rs.deleted_at),
+        where: is_nil(re.deleted_at),
+        where: is_nil(r.deleted_at),
+        where: is_nil(l.deleted_at),
+        distinct: true,
+        select: %{exercise_id: re.exercise_id, custom_name: re.custom_name}
+
+    merge_exercises(Repo.all(workout_query), Repo.all(routine_query))
+  end
+
+  @doc """
+  Ranks users by their heaviest single set (`max(weight)`) for one exercise —
+  identified by `exercise_id` for provider exercises or `custom_name` for custom
+  ones — across workouts *and* routines. Powers the per-exercise ("strength PR")
+  scoreboard. Optionally scoped to a single plan. Rows:
+  `%{user: %{id, name, color}, score: float}`, ranked desc and capped.
+  """
+  def get_exercise_max_weight(exercise_id, custom_name, period \\ :weekly, plan_id \\ nil) do
+    workout_query =
+      plan_id
+      |> exercise_max_workout_query()
+      |> filter_workout_exercise(exercise_id, custom_name)
+
+    routine_query =
+      plan_id
+      |> exercise_max_routine_query()
+      |> filter_routine_exercise(exercise_id, custom_name)
+
+    merge_scores(
+      Repo.all(filter_by_period(workout_query, period)),
+      Repo.all(filter_by_period(routine_query, period))
+    )
+  end
+
+  defp exercise_max_workout_query(nil) do
+    from s in Set,
+      join: u in assoc(s, :user),
+      join: we in assoc(s, :workout_exercise),
+      as: :workout_exercise,
+      where: is_nil(u.deleted_at),
+      where: is_nil(we.deleted_at),
+      where: is_nil(s.deleted_at),
+      group_by: u.id,
+      select: %{user: %{id: u.id, name: u.name, color: u.color}, score: max(s.weight)}
+  end
+
+  defp exercise_max_workout_query(plan_id) do
+    from s in Set,
+      join: u in assoc(s, :user),
+      join: we in assoc(s, :workout_exercise),
+      as: :workout_exercise,
+      join: w in assoc(we, :workout),
+      where: w.plan_id == ^plan_id,
+      where: is_nil(u.deleted_at),
+      where: is_nil(we.deleted_at),
+      where: is_nil(w.deleted_at),
+      where: is_nil(s.deleted_at),
+      group_by: u.id,
+      select: %{user: %{id: u.id, name: u.name, color: u.color}, score: max(s.weight)}
+  end
+
+  defp exercise_max_routine_query(nil) do
+    from l in RoutineSetLog,
+      join: u in assoc(l, :user),
+      join: rs in assoc(l, :routine_set),
+      join: re in assoc(rs, :routine_exercise),
+      as: :routine_exercise,
+      where: is_nil(u.deleted_at),
+      where: is_nil(rs.deleted_at),
+      where: is_nil(re.deleted_at),
+      where: is_nil(l.deleted_at),
+      group_by: u.id,
+      select: %{user: %{id: u.id, name: u.name, color: u.color}, score: max(l.weight)}
+  end
+
+  defp exercise_max_routine_query(plan_id) do
+    from l in RoutineSetLog,
+      join: u in assoc(l, :user),
+      join: rs in assoc(l, :routine_set),
+      join: re in assoc(rs, :routine_exercise),
+      as: :routine_exercise,
+      join: r in assoc(re, :routine),
+      where: r.plan_id == ^plan_id,
+      where: is_nil(u.deleted_at),
+      where: is_nil(rs.deleted_at),
+      where: is_nil(re.deleted_at),
+      where: is_nil(r.deleted_at),
+      where: is_nil(l.deleted_at),
+      group_by: u.id,
+      select: %{user: %{id: u.id, name: u.name, color: u.color}, score: max(l.weight)}
+  end
+
+  defp filter_workout_exercise(query, exercise_id, _custom_name) when not is_nil(exercise_id),
+    do: where(query, [workout_exercise: we], we.exercise_id == ^exercise_id)
+
+  defp filter_workout_exercise(query, _exercise_id, custom_name),
+    do: where(query, [workout_exercise: we], we.custom_name == ^custom_name)
+
+  defp filter_routine_exercise(query, exercise_id, _custom_name) when not is_nil(exercise_id),
+    do: where(query, [routine_exercise: re], re.exercise_id == ^exercise_id)
+
+  defp filter_routine_exercise(query, _exercise_id, custom_name),
+    do: where(query, [routine_exercise: re], re.custom_name == ^custom_name)
+
+  # Dedupes exercise identifiers across the workout and routine sources and orders
+  # them by their display key so the picker is stable.
+  defp merge_exercises(workout_rows, routine_rows) do
+    (workout_rows ++ routine_rows)
+    |> Enum.uniq_by(&{&1.exercise_id, &1.custom_name})
+    |> Enum.sort_by(&(&1.exercise_id || &1.custom_name))
+  end
+
+  # Combines per-user max-weight rows from the workout and routine sources, taking
+  # the heavier of the two per user, ranking by that max, and capping the board.
+  defp merge_scores(workout_rows, routine_rows) do
+    (workout_rows ++ routine_rows)
+    |> Enum.reject(&is_nil(&1.score))
+    |> Enum.group_by(& &1.user.id)
+    |> Enum.map(fn {_user_id, rows} ->
+      %{user: hd(rows).user, score: rows |> Enum.map(& &1.score) |> Enum.max()}
+    end)
+    |> Enum.sort_by(& &1.score, :desc)
+    |> Enum.take(50)
+  end
+
+  # Combines per-user volume rows from the workout and routine sources, summing
+  # the two volumes per user, ranking by total volume, and capping the board.
+  defp merge_volumes(workout_rows, routine_rows) do
+    (workout_rows ++ routine_rows)
+    |> Enum.group_by(& &1.user.id)
+    |> Enum.map(fn {_user_id, rows} ->
+      %{user: hd(rows).user, volume: Enum.reduce(rows, 0, &(&1.volume + &2))}
+    end)
+    |> Enum.sort_by(& &1.volume, :desc)
+    |> Enum.take(50)
   end
 
   defp filter_by_period(query, :weekly),

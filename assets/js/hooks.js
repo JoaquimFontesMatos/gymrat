@@ -1,5 +1,115 @@
 let Hooks = {};
 
+// Pointer-based drag-and-drop reordering (works with mouse AND touch — no JS
+// dependency).
+//
+// Markup contract on the container (the element carrying phx-hook="Sortable"):
+//   - each reorderable child has [data-sortable-item] and data-id="<id>"
+//   - a drag affordance inside each child has [data-drag-handle] (give it the
+//     `touch-none` class so a touch drag doesn't scroll the page)
+// Dragging starts only from a handle, so inputs/buttons in the row stay usable.
+// The list reorders live under the pointer (visual feedback) and the dragged
+// row is highlighted; on release the new order of ids is pushed as a
+// "reposition" event ({ids: [...]}).
+Hooks.Sortable = {
+  mounted() {
+    const el = this.el;
+    const DRAG_CLASSES = ["opacity-60", "ring-2", "ring-primary", "shadow-lg"];
+    const EDGE = 64; // px from a viewport edge that triggers auto-scroll
+    const MAX_SPEED = 16; // px per frame at the very edge
+    this.dragEl = null;
+    this.scrollSpeed = 0;
+    this.lastY = 0;
+    this.raf = null;
+
+    const ids = () =>
+      Array.from(el.querySelectorAll("[data-sortable-item]")).map((i) => i.dataset.id);
+
+    // Move the dragged row to wherever the pointer (at viewport-y `y`) sits.
+    const reorderAt = (y) => {
+      if (!this.dragEl) return;
+      const over = Array.from(el.querySelectorAll("[data-sortable-item]")).find((it) => {
+        if (it === this.dragEl) return false;
+        const r = it.getBoundingClientRect();
+        return y >= r.top && y <= r.bottom;
+      });
+      if (over) {
+        const r = over.getBoundingClientRect();
+        el.insertBefore(this.dragEl, y > r.top + r.height / 2 ? over.nextSibling : over);
+      }
+    };
+
+    // While dragging near a viewport edge, scroll the page and keep the row
+    // positioned under the (stationary) pointer as content slides past.
+    const autoScroll = () => {
+      if (!this.dragEl) {
+        this.raf = null;
+        return;
+      }
+      if (this.scrollSpeed !== 0) {
+        window.scrollBy(0, this.scrollSpeed);
+        reorderAt(this.lastY);
+      }
+      this.raf = requestAnimationFrame(autoScroll);
+    };
+
+    this.onMove = (e) => {
+      if (!this.dragEl) return;
+      e.preventDefault();
+      this.lastY = e.clientY;
+
+      const vh = window.innerHeight;
+      if (e.clientY < EDGE) {
+        this.scrollSpeed = -Math.ceil((MAX_SPEED * (EDGE - e.clientY)) / EDGE);
+      } else if (e.clientY > vh - EDGE) {
+        this.scrollSpeed = Math.ceil((MAX_SPEED * (e.clientY - (vh - EDGE))) / EDGE);
+      } else {
+        this.scrollSpeed = 0;
+      }
+
+      reorderAt(e.clientY);
+    };
+
+    this.onUp = () => {
+      if (!this.dragEl) return;
+      this.dragEl.classList.remove(...DRAG_CLASSES);
+      this.dragEl = null;
+      this.scrollSpeed = 0;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      this.raf = null;
+      document.removeEventListener("pointermove", this.onMove);
+      document.removeEventListener("pointerup", this.onUp);
+      document.removeEventListener("pointercancel", this.onUp);
+      this.pushEvent("reposition", { ids: ids() });
+    };
+
+    this.onDown = (e) => {
+      const handle = e.target.closest("[data-drag-handle]");
+      if (!handle) return;
+      const item = handle.closest("[data-sortable-item]");
+      if (!item) return;
+      e.preventDefault();
+      this.dragEl = item;
+      this.lastY = e.clientY;
+      this.scrollSpeed = 0;
+      item.classList.add(...DRAG_CLASSES);
+      this.raf = requestAnimationFrame(autoScroll);
+      document.addEventListener("pointermove", this.onMove, { passive: false });
+      document.addEventListener("pointerup", this.onUp);
+      document.addEventListener("pointercancel", this.onUp);
+    };
+
+    el.addEventListener("pointerdown", this.onDown);
+  },
+
+  destroyed() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    document.removeEventListener("pointermove", this.onMove);
+    document.removeEventListener("pointerup", this.onUp);
+    document.removeEventListener("pointercancel", this.onUp);
+  },
+};
+
 Hooks.ChartLoader = {
   mounted() {
     this.pushEvent("load_chart_data", {});
@@ -72,15 +182,30 @@ Hooks.Chart = {
   },
 };
 
+// The countdown is stored as an absolute end-time (epoch ms) in localStorage,
+// so it survives a page reload or navigation and is recomputed each tick rather
+// than decremented — which also keeps it accurate when the tab is backgrounded
+// (setInterval is throttled there). Override the storage key with
+// data-timer-key if a page needs an independent timer.
 Hooks.RestTimer = {
   mounted() {
-    this.remaining = 0;
+    this.key = this.el.dataset.timerKey || "gymrat:rest-timer";
     this.interval = null;
     this.display = this.el.querySelector("[data-role=display]");
 
+    // When data-on-complete is set (guided rest screen) and the user has the
+    // auto-skip toggle on, finishing the countdown pushes that event to advance.
+    const onComplete = this.el.dataset.onComplete;
+    const autoskipKey = "gymrat:rest-autoskip";
+    const autoskipOn = () => localStorage.getItem(autoskipKey) === "1";
+
     const format = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    const remaining = () => {
+      const end = parseInt(localStorage.getItem(this.key) || "0", 10);
+      return Math.max(Math.ceil((end - Date.now()) / 1000), 0);
+    };
     const render = () => {
-      this.display.textContent = format(Math.max(this.remaining, 0));
+      this.display.textContent = format(remaining());
     };
 
     this.stop = () => {
@@ -88,6 +213,12 @@ Hooks.RestTimer = {
         clearInterval(this.interval);
         this.interval = null;
       }
+    };
+
+    this.clear = () => {
+      this.stop();
+      localStorage.removeItem(this.key);
+      render();
     };
 
     this.beep = () => {
@@ -107,32 +238,68 @@ Hooks.RestTimer = {
       }
     };
 
-    this.start = (seconds) => {
-      this.stop();
-      this.remaining = seconds;
+    const tick = () => {
       render();
-      this.interval = setInterval(() => {
-        this.remaining -= 1;
-        render();
-        if (this.remaining <= 0) {
-          this.stop();
-          this.beep();
-          this.el.classList.add("ring-2", "ring-success");
-          setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
-        }
-      }, 1000);
+      if (remaining() <= 0) {
+        this.stop();
+        localStorage.removeItem(this.key);
+        this.beep();
+        this.el.classList.add("ring-2", "ring-success");
+        setTimeout(() => this.el.classList.remove("ring-2", "ring-success"), 1500);
+        if (onComplete && autoskipOn()) this.pushEvent(onComplete, {});
+      }
+    };
+
+    this.run = () => {
+      this.stop();
+      this.interval = setInterval(tick, 250);
+    };
+
+    this.start = (seconds) => {
+      localStorage.setItem(this.key, String(Date.now() + seconds * 1000));
+      render();
+      this.run();
+    };
+
+    // Push the end-time forward (the "+15s" control). Extends from whatever is
+    // left, or from now if the countdown already lapsed.
+    this.extend = (seconds) => {
+      const end = Math.max(parseInt(localStorage.getItem(this.key) || "0", 10), Date.now());
+      localStorage.setItem(this.key, String(end + seconds * 1000));
+      render();
+      this.run();
     };
 
     this.el.querySelectorAll("[data-rest]").forEach((btn) => {
       btn.addEventListener("click", () => this.start(parseInt(btn.dataset.rest, 10)));
     });
-    this.el.querySelector("[data-role=reset]").addEventListener("click", () => {
-      this.stop();
-      this.remaining = 0;
-      render();
+    this.el.querySelectorAll("[data-rest-add]").forEach((btn) => {
+      btn.addEventListener("click", () => this.extend(parseInt(btn.dataset.restAdd, 10)));
     });
+    // Optional controls — absent on the guided rest screen.
+    const resetBtn = this.el.querySelector("[data-role=reset]");
+    if (resetBtn) resetBtn.addEventListener("click", () => this.clear());
 
+    // Auto-skip toggle — its choice persists across rest steps and reloads.
+    const autoskipBox = this.el.querySelector("[data-role=autoskip]");
+    if (autoskipBox) {
+      autoskipBox.checked = autoskipOn();
+      autoskipBox.addEventListener("change", () => {
+        localStorage.setItem(autoskipKey, autoskipBox.checked ? "1" : "0");
+      });
+    }
+
+    // Resume an in-progress countdown after a reload; otherwise auto-start from
+    // data-autostart-seconds (guided rest screen) or drop a stale entry.
     render();
+    const autostart = parseInt(this.el.dataset.autostartSeconds || "0", 10);
+    if (remaining() > 0) {
+      this.run();
+    } else if (autostart > 0) {
+      this.start(autostart);
+    } else {
+      localStorage.removeItem(this.key);
+    }
   },
 
   destroyed() {

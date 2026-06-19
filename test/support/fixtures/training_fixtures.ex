@@ -7,6 +7,7 @@ defmodule Gymrat.TrainingFixtures do
   alias Gymrat.Repo
   alias Gymrat.Plans.Plan
   alias Gymrat.Workouts.{Workout, WorkoutExercise}
+  alias Gymrat.Routines.{Routine, RoutineExercise, RoutineSet, RoutineSetLog}
   alias Gymrat.Training.Sets
 
   import Gymrat.AccountsFixtures, only: [unconfirmed_user_fixture: 0]
@@ -64,5 +65,64 @@ defmodule Gymrat.TrainingFixtures do
     |> plan_fixture()
     |> workout_fixture()
     |> workout_exercise_fixture()
+  end
+
+  def routine_fixture(plan, attrs \\ %{}) do
+    Repo.insert!(%Routine{
+      name: Map.get(attrs, :name, "Routine #{System.unique_integer([:positive])}"),
+      icon: Map.get(attrs, :icon),
+      plan_id: plan.id
+    })
+  end
+
+  def routine_exercise_fixture(routine, attrs \\ %{}) do
+    Repo.insert!(%RoutineExercise{
+      routine_id: routine.id,
+      exercise_id: Map.get(attrs, :exercise_id, "0001"),
+      custom_name: Map.get(attrs, :custom_name),
+      body_part: Map.get(attrs, :body_part),
+      position: Map.get(attrs, :position, 0)
+    })
+  end
+
+  def routine_set_fixture(routine_exercise, attrs \\ %{}) do
+    Repo.insert!(%RoutineSet{
+      routine_exercise_id: routine_exercise.id,
+      reps_min: Map.get(attrs, :reps_min, 10),
+      reps_max: Map.get(attrs, :reps_max),
+      duration_seconds: Map.get(attrs, :duration_seconds),
+      rest_seconds: Map.get(attrs, :rest_seconds, 90),
+      position: Map.get(attrs, :position, 0)
+    })
+  end
+
+  @doc """
+  Logs actual performance for `user` against a planned `routine_set`. Supports
+  `:reps`, `:weight` and `:inserted_at` so volume tests can place a log inside
+  or outside a scoreboard period.
+  """
+  def routine_set_log_fixture(user, routine_set, attrs \\ %{}) do
+    Repo.insert!(
+      struct(
+        %RoutineSetLog{
+          user_id: user.id,
+          routine_set_id: routine_set.id,
+          reps: 10,
+          weight: 50.0
+        },
+        attrs
+      )
+    )
+  end
+
+  @doc """
+  Builds a full chain (plan → routine → routine_exercise) for `user` and returns
+  the routine_exercise.
+  """
+  def routine_exercise_chain_fixture(user) do
+    user
+    |> plan_fixture()
+    |> routine_fixture()
+    |> routine_exercise_fixture()
   end
 end

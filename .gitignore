@@ -40,3 +40,5 @@ npm-debug.log
 /config/.env.exs
 
 .phoenix-pulse-cache.json
+# Local exercise cache (DETS)
+/priv/cache/
