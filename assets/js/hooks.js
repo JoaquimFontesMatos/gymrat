@@ -15,31 +15,68 @@ Hooks.Sortable = {
   mounted() {
     const el = this.el;
     const DRAG_CLASSES = ["opacity-60", "ring-2", "ring-primary", "shadow-lg"];
+    const EDGE = 64; // px from a viewport edge that triggers auto-scroll
+    const MAX_SPEED = 16; // px per frame at the very edge
     this.dragEl = null;
+    this.scrollSpeed = 0;
+    this.lastY = 0;
+    this.raf = null;
 
     const ids = () =>
       Array.from(el.querySelectorAll("[data-sortable-item]")).map((i) => i.dataset.id);
 
-    this.onMove = (e) => {
+    // Move the dragged row to wherever the pointer (at viewport-y `y`) sits.
+    const reorderAt = (y) => {
       if (!this.dragEl) return;
-      e.preventDefault();
-      const items = Array.from(el.querySelectorAll("[data-sortable-item]"));
-      const over = items.find((it) => {
+      const over = Array.from(el.querySelectorAll("[data-sortable-item]")).find((it) => {
         if (it === this.dragEl) return false;
         const r = it.getBoundingClientRect();
-        return e.clientY >= r.top && e.clientY <= r.bottom;
+        return y >= r.top && y <= r.bottom;
       });
       if (over) {
         const r = over.getBoundingClientRect();
-        const after = e.clientY > r.top + r.height / 2;
-        el.insertBefore(this.dragEl, after ? over.nextSibling : over);
+        el.insertBefore(this.dragEl, y > r.top + r.height / 2 ? over.nextSibling : over);
       }
+    };
+
+    // While dragging near a viewport edge, scroll the page and keep the row
+    // positioned under the (stationary) pointer as content slides past.
+    const autoScroll = () => {
+      if (!this.dragEl) {
+        this.raf = null;
+        return;
+      }
+      if (this.scrollSpeed !== 0) {
+        window.scrollBy(0, this.scrollSpeed);
+        reorderAt(this.lastY);
+      }
+      this.raf = requestAnimationFrame(autoScroll);
+    };
+
+    this.onMove = (e) => {
+      if (!this.dragEl) return;
+      e.preventDefault();
+      this.lastY = e.clientY;
+
+      const vh = window.innerHeight;
+      if (e.clientY < EDGE) {
+        this.scrollSpeed = -Math.ceil((MAX_SPEED * (EDGE - e.clientY)) / EDGE);
+      } else if (e.clientY > vh - EDGE) {
+        this.scrollSpeed = Math.ceil((MAX_SPEED * (e.clientY - (vh - EDGE))) / EDGE);
+      } else {
+        this.scrollSpeed = 0;
+      }
+
+      reorderAt(e.clientY);
     };
 
     this.onUp = () => {
       if (!this.dragEl) return;
       this.dragEl.classList.remove(...DRAG_CLASSES);
       this.dragEl = null;
+      this.scrollSpeed = 0;
+      if (this.raf) cancelAnimationFrame(this.raf);
+      this.raf = null;
       document.removeEventListener("pointermove", this.onMove);
       document.removeEventListener("pointerup", this.onUp);
       document.removeEventListener("pointercancel", this.onUp);
@@ -53,7 +90,10 @@ Hooks.Sortable = {
       if (!item) return;
       e.preventDefault();
       this.dragEl = item;
+      this.lastY = e.clientY;
+      this.scrollSpeed = 0;
       item.classList.add(...DRAG_CLASSES);
+      this.raf = requestAnimationFrame(autoScroll);
       document.addEventListener("pointermove", this.onMove, { passive: false });
       document.addEventListener("pointerup", this.onUp);
       document.addEventListener("pointercancel", this.onUp);
@@ -63,6 +103,7 @@ Hooks.Sortable = {
   },
 
   destroyed() {
+    if (this.raf) cancelAnimationFrame(this.raf);
     document.removeEventListener("pointermove", this.onMove);
     document.removeEventListener("pointerup", this.onUp);
     document.removeEventListener("pointercancel", this.onUp);

@@ -114,4 +114,20 @@ defmodule Gymrat.Training.RoutineSetLogsTest do
       assert RoutineSetLogs.logs_by_day(re.id, user.id) == []
     end
   end
+
+  describe "routine_totals_by_day/2" do
+    test "sums volume and reps per day across the routine" do
+      user = training_user_fixture()
+      plan = plan_fixture(user)
+      routine = routine_fixture(plan)
+      re = routine_exercise_fixture(routine)
+      set = routine_set_fixture(re)
+
+      routine_set_log_fixture(user, set, %{reps: 10, weight: 50.0})
+
+      assert [row] = RoutineSetLogs.routine_totals_by_day(routine.id, user.id)
+      assert row.volume == 500.0
+      assert row.reps == 10
+    end
+  end
 end

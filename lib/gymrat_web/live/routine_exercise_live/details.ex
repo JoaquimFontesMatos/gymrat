@@ -58,91 +58,99 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
           id={"routine-set-#{set.id}"}
           data-sortable-item
           data-id={set.id}
-          class="flex items-center gap-2 rounded-lg border border-base-300 p-2"
+          class="flex flex-col gap-3 rounded-xl border border-base-300 bg-base-100 p-3"
         >
-          <span
-            :if={@is_owner}
-            data-drag-handle
-            class="touch-none select-none cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing shrink-0"
-            aria-hidden="true"
-          >
-            <.icon name="hero-bars-3" class="size-4" />
-          </span>
-          <span class="font-semibold w-12 shrink-0">Set {index + 1}</span>
-
           <%= if @is_owner do %>
+            <div class="flex items-center gap-2">
+              <span
+                data-drag-handle
+                class="touch-none select-none cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing shrink-0"
+                aria-hidden="true"
+              >
+                <.icon name="hero-bars-3" class="size-5" />
+              </span>
+              <span class="font-semibold">Set {index + 1}</span>
+
+              <div class="ml-auto flex items-center gap-1">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs btn-square"
+                  phx-click="move_up"
+                  phx-value-id={set.id}
+                  disabled={index == 0}
+                  aria-label="Move set up"
+                >
+                  <.icon name="hero-chevron-up" class="size-4" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs btn-square"
+                  phx-click="move_down"
+                  phx-value-id={set.id}
+                  disabled={index == length(@exercise.routine_sets) - 1}
+                  aria-label="Move set down"
+                >
+                  <.icon name="hero-chevron-down" class="size-4" />
+                </button>
+                <.button
+                  type="button"
+                  class="btn btn-error btn-ghost btn-xs btn-square"
+                  phx-click="delete_set"
+                  phx-value-id={set.id}
+                  aria-label="Delete set"
+                >
+                  <.icon name="hero-trash" class="size-4" />
+                </.button>
+              </div>
+            </div>
+
             <.form
               for={@set_forms[set.id]}
               id={"routine-set-form-#{set.id}"}
               phx-submit="update_set"
-              class="flex flex-1 flex-wrap items-end gap-2"
+              class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 items-end"
             >
               <input type="hidden" name="set[id]" value={set.id} />
               <.input
                 field={@set_forms[set.id][:reps_min]}
                 type="number"
                 label="Min reps"
-                class="input w-20"
+                class="input input-sm w-full"
                 min="1"
               />
               <.input
                 field={@set_forms[set.id][:reps_max]}
                 type="number"
                 label="Max reps"
-                class="input w-20"
+                class="input input-sm w-full"
                 min="1"
               />
               <.input
                 field={@set_forms[set.id][:duration_seconds]}
                 type="number"
                 label="Hold (s)"
-                class="input w-24"
+                class="input input-sm w-full"
                 min="1"
               />
               <.input
                 field={@set_forms[set.id][:rest_seconds]}
                 type="number"
                 label="Rest (s)"
-                class="input w-24"
+                class="input input-sm w-full"
                 min="0"
               />
-              <.button type="submit" class="btn btn-primary btn-sm">Save</.button>
+              <.button
+                type="submit"
+                class="col-span-2 sm:col-span-4 mt-1 btn btn-primary btn-sm w-full"
+              >
+                Save set
+              </.button>
             </.form>
-
-            <div class="flex flex-col">
-              <button
-                type="button"
-                class="btn btn-ghost btn-xs btn-square"
-                phx-click="move_up"
-                phx-value-id={set.id}
-                disabled={index == 0}
-                aria-label="Move set up"
-              >
-                <.icon name="hero-chevron-up" class="size-4" />
-              </button>
-              <button
-                type="button"
-                class="btn btn-ghost btn-xs btn-square"
-                phx-click="move_down"
-                phx-value-id={set.id}
-                disabled={index == length(@exercise.routine_sets) - 1}
-                aria-label="Move set down"
-              >
-                <.icon name="hero-chevron-down" class="size-4" />
-              </button>
-            </div>
-
-            <.button
-              type="button"
-              class="btn btn-error btn-soft btn-sm btn-square"
-              phx-click="delete_set"
-              phx-value-id={set.id}
-              aria-label="Delete set"
-            >
-              <.icon name="hero-trash" class="size-4" />
-            </.button>
           <% else %>
-            <span class="flex-1">{set_summary(set)}</span>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold shrink-0">Set {index + 1}</span>
+              <span class="flex-1 text-gray-500">{set_summary(set)}</span>
+            </div>
           <% end %>
         </li>
 
@@ -161,37 +169,39 @@ defmodule GymratWeb.RoutineExerciseLive.Details do
           id="new_set_form"
           phx-submit="add_set"
           phx-change="validate_set"
-          class="flex flex-wrap items-end gap-2"
+          class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 items-end rounded-xl border border-base-300 bg-base-100 p-3"
         >
           <.input
             field={@set_form[:reps_min]}
             type="number"
             label="Min reps"
-            class="input w-24"
+            class="input input-sm w-full"
             min="1"
           />
           <.input
             field={@set_form[:reps_max]}
             type="number"
             label="Max reps"
-            class="input w-24"
+            class="input input-sm w-full"
             min="1"
           />
           <.input
             field={@set_form[:duration_seconds]}
             type="number"
             label="Hold (s)"
-            class="input w-24"
+            class="input input-sm w-full"
             min="1"
           />
           <.input
             field={@set_form[:rest_seconds]}
             type="number"
             label="Rest (s)"
-            class="input w-28"
+            class="input input-sm w-full"
             min="0"
           />
-          <.button type="submit" class="btn btn-primary">Add Set</.button>
+          <.button type="submit" class="col-span-2 sm:col-span-4 mt-1 btn btn-primary btn-sm w-full">
+            Add Set
+          </.button>
         </.form>
       <% end %>
 

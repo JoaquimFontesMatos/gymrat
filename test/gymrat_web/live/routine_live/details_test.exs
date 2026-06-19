@@ -48,6 +48,19 @@ defmodule GymratWeb.RoutineLive.DetailsTest do
     assert Gymrat.Repo.reload(b).position == 0
   end
 
+  test "renders routine progress charts from logged history", %{conn: conn, user: user} do
+    {plan, routine, a, _b} = routine_with_exercises(user)
+    set = routine_set_fixture(a, %{reps_min: 10})
+    routine_set_log_fixture(user, set, %{reps: 10, weight: 50.0})
+
+    {:ok, lv, _html} = live(conn, ~p"/plans/#{plan.id}/routines/#{routine.id}")
+
+    # The ChartLoader hook pushes this on mount in the browser; simulate it here.
+    render_hook(lv, "load_chart_data", %{})
+
+    assert has_element?(lv, "#routineVolumeChart")
+  end
+
   test "owner can delete the routine", %{conn: conn, user: user} do
     {plan, routine, _a, _b} = routine_with_exercises(user)
 

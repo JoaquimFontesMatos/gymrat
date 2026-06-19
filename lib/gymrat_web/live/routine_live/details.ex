@@ -3,7 +3,14 @@ defmodule GymratWeb.RoutineLive.Details do
 
   alias Gymrat.Training.Routines
   alias Gymrat.Training.RoutineExercises
+  alias Gymrat.Training.RoutineSetLogs
   import GymratWeb.MyComponents
+
+  @chart_colors %{
+    volume: %{border: "rgba(59, 130, 246, 0.7)", background: "rgba(59, 130, 246, 0.2)"},
+    reps: %{border: "rgba(168, 85, 247, 0.7)", background: "rgba(168, 85, 247, 0.2)"},
+    duration: %{border: "rgba(34, 197, 94, 0.7)", background: "rgba(34, 197, 94, 0.2)"}
+  }
 
   @doc false
   def format_set(%{duration_seconds: duration, rest_seconds: rest}) when is_integer(duration) do
@@ -201,6 +208,45 @@ defmodule GymratWeb.RoutineLive.Details do
           </.button>
         <% end %>
       </ul>
+
+      <section class="mt-8">
+        <h2
+          :if={@volume_chart_data || @reps_chart_data || @duration_chart_data}
+          class="mb-2 font-bold text-lg"
+        >
+          Progress
+        </h2>
+        <div
+          id="routine-chart-loader"
+          phx-hook="ChartLoader"
+          class="flex md:flex-row flex-col flex-wrap justify-center items-center gap-4 w-full"
+        >
+          <div :if={@volume_chart_data}>
+            <canvas
+              id="routineVolumeChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@volume_chart_data)}
+              data-y-axis-title="Volume (kg)"
+            ></canvas>
+          </div>
+          <div :if={@reps_chart_data}>
+            <canvas
+              id="routineRepsChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@reps_chart_data)}
+              data-y-axis-title="Reps"
+            ></canvas>
+          </div>
+          <div :if={@duration_chart_data}>
+            <canvas
+              id="routineDurationChart"
+              phx-hook="Chart"
+              data-chart={Jason.encode!(@duration_chart_data)}
+              data-y-axis-title="Session duration (min)"
+            ></canvas>
+          </div>
+        </div>
+      </section>
     </Layouts.app>
     """
   end
@@ -216,17 +262,36 @@ defmodule GymratWeb.RoutineLive.Details do
     case Routines.get_routine(routine_id) do
       {:ok, routine} ->
         {:ok,
-         assign(socket,
+         socket
+         |> assign(
            plan_id: plan_id,
            routine: routine,
            weekdays: Routines.get_routine_weekdays(routine_id),
            show_modal: false,
-           is_routine_owner: is_routine_owner
-         )}
+           is_routine_owner: is_routine_owner,
+           volume_chart_data: nil,
+           reps_chart_data: nil,
+           duration_chart_data: nil
+         )
+         |> push_event("load_chart_data", %{})}
 
       {:error, _reason} ->
         {:error, :not_found}
     end
+  end
+
+  @impl true
+  def handle_event("load_chart_data", _params, socket) do
+    user_id = socket.assigns.current_scope.user.id
+    rows = RoutineSetLogs.routine_totals_by_day(socket.assigns.routine.id, user_id)
+
+    {:noreply,
+     assign(socket,
+       volume_chart_data: total_chart(rows, :volume, "Volume (kg)", @chart_colors.volume),
+       reps_chart_data: total_chart(rows, :reps, "Reps", @chart_colors.reps),
+       duration_chart_data:
+         total_chart(rows, :duration, "Session duration (min)", @chart_colors.duration)
+     )}
   end
 
   @impl true
@@ -291,6 +356,30 @@ defmodule GymratWeb.RoutineLive.Details do
       {:noreply, assign(socket, :routine, routine)}
     else
       {:noreply, socket}
+    end
+  end
+
+  # Single-line Chart.js dataset of one daily total across the routine. Returns
+  # nil when no day carries that metric so the template can hide the canvas.
+  defp total_chart(rows, key, label, color) do
+    points = Enum.reject(rows, &is_nil(Map.get(&1, key)))
+
+    if points == [] do
+      nil
+    else
+      %{
+        labels: Enum.map(points, &Calendar.strftime(&1.day, "%d-%m-%y")),
+        datasets: [
+          %{
+            label: label,
+            data: Enum.map(points, &Map.get(&1, key)),
+            borderColor: color.border,
+            backgroundColor: color.background,
+            fill: false,
+            tension: 0.3
+          }
+        ]
+      }
     end
   end
 end
