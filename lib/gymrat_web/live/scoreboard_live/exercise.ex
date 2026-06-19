@@ -2,7 +2,7 @@ defmodule GymratWeb.ScoreboardLive.Exercise do
   use GymratWeb, :live_view
 
   alias Gymrat.Training.{Plans, Sets}
-  alias Gymrat.ExerciseFetcher
+  alias Gymrat.ExerciseCache
   import GymratWeb.MyComponents
 
   @periods %{"weekly" => :weekly, "monthly" => :monthly, "all_time" => :all_time}
@@ -74,14 +74,17 @@ defmodule GymratWeb.ScoreboardLive.Exercise do
   @impl true
   def mount(_payload, _session, socket) do
     plans = Plans.list_my_plans(socket.assigns.current_scope.user.id)
-    {:ok, assign(socket, :plans, plans)}
+    # :unset (never a real plan id, not even nil/"Everyone") forces the first
+    # handle_params to build the options regardless of the default scope.
+    {:ok, assign(socket, plans: plans, options_plan_id: :unset)}
   end
 
   @impl true
   def handle_params(params, _uri, socket) do
     period = Map.get(@periods, params["period"], :weekly)
     selected_plan_id = parse_plan_id(params["plan_id"], socket.assigns.plans)
-    exercise_options = build_exercise_options(selected_plan_id)
+    socket = ensure_exercise_options(socket, selected_plan_id)
+    exercise_options = socket.assigns.exercise_options
     selected = find_exercise(params["exercise"], exercise_options)
 
     scores =
@@ -100,7 +103,6 @@ defmodule GymratWeb.ScoreboardLive.Exercise do
      socket
      |> assign(:period, period)
      |> assign(:selected_plan_id, selected_plan_id)
-     |> assign(:exercise_options, exercise_options)
      |> assign(:selected_exercise, selected && selected.value)
      |> assign(:scores, scores)
      |> assign(:title, title(selected))}
@@ -118,27 +120,54 @@ defmodule GymratWeb.ScoreboardLive.Exercise do
   defp title(nil), do: "Exercise Scoreboard"
   defp title(%{label: label}), do: "#{label} — Max Weight"
 
+  # The exercise list only depends on the plan scope, but resolving provider
+  # names is comparatively expensive (a cache lookup, or an API call on a cold
+  # cache). Rebuild it only when the plan scope actually changes so switching
+  # period tabs is instant.
+  defp ensure_exercise_options(socket, plan_id) do
+    if socket.assigns[:options_plan_id] == plan_id do
+      socket
+    else
+      assign(socket,
+        exercise_options: build_exercise_options(plan_id),
+        options_plan_id: plan_id
+      )
+    end
+  end
+
   # Builds the picker options from the exercises that actually have logged sets,
-  # resolving a display name for each (provider name via the cached fetcher, or
-  # the custom name as-is).
+  # resolving a display name for each (provider name via the cache, or the custom
+  # name as-is). Names are resolved concurrently so a cold cache doesn't serialize
+  # one flaky API round-trip after another.
   defp build_exercise_options(plan_id) do
     plan_id
     |> Sets.list_scored_exercises()
-    |> Enum.map(fn ex ->
-      %{
-        label: exercise_label(ex),
-        value: encode_exercise(ex),
-        exercise_id: ex.exercise_id,
-        custom_name: ex.custom_name
-      }
+    |> Task.async_stream(&to_option/1,
+      ordered: false,
+      max_concurrency: 10,
+      timeout: 15_000,
+      on_timeout: :kill_task
+    )
+    |> Enum.flat_map(fn
+      {:ok, option} -> [option]
+      {:exit, _} -> []
     end)
     |> Enum.sort_by(&String.downcase(&1.label))
+  end
+
+  defp to_option(ex) do
+    %{
+      label: exercise_label(ex),
+      value: encode_exercise(ex),
+      exercise_id: ex.exercise_id,
+      custom_name: ex.custom_name
+    }
   end
 
   defp exercise_label(%{exercise_id: nil, custom_name: name}), do: name
 
   defp exercise_label(%{exercise_id: id}) do
-    case ExerciseFetcher.fetch_exercise(id) do
+    case ExerciseCache.get_exercise(id) do
       {:ok, %{"name" => name}} when is_binary(name) and name != "" -> name
       _ -> id
     end
