@@ -108,6 +108,7 @@ defmodule GymratWeb.Router do
       live "/weights/:id/edit", WeightLive.Edit, :edit_weight
 
       live "/scoreboard", ScoreboardLive.Show, :index
+      live "/scoreboard/exercise", ScoreboardLive.Exercise, :index
 
       live "/users/profile", UserLive.Profile, :profile
       live "/users/settings", UserLive.Settings, :edit
