@@ -1,0 +1,28 @@
+# keep the build context small and reproducible
+deps/
+_build/
+.git/
+.gitignore
+.github/
+
+# build artifacts / local state
+priv/static/assets/
+priv/static/cache_manifest.json
+erl_crash.dump
+*.ez
+node_modules/
+assets/node_modules/
+.elixir_ls/
+.expert/
+.vscode/
+
+# tests and docs are not needed for the prod release
+test/
+doc/
+wiki/
+
+# never ship secrets into the image
+*.env
+prod.env
+.env
+.env.*

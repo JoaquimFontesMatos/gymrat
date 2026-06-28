@@ -35,32 +35,38 @@ if config_env() == :prod do
       For example: ecto://USER:PASS@HOST/DATABASE
       """
 
-  ca_cert =
-    Base.decode64!(
-      System.get_env("DATABASE_CA") ||
-        raise("""
-         environment variable DATABASE_CA is missing.
-        For example: ecto://USER:PASS@HOST/DATABASE
-        """)
-    )
+  # SSL is resolved from the environment so the same release works against a
+  # managed provider that pins a CA (Aiven/Gigalixir) and against an in-cluster
+  # Postgres that speaks plaintext over the pod network (CNPG on Kubernetes):
+  #
+  #   * DATABASE_CA set  -> verify_peer against the provided Base64 CA bundle
+  #   * DB_SSL=true      -> TLS without a pinned CA (verify_none)
+  #   * neither          -> no TLS (plaintext, the in-cluster default)
+  db_ssl_opts =
+    cond do
+      encoded_ca = System.get_env("DATABASE_CA") ->
+        ca_path = Path.join(System.tmp_dir!(), "ca.pem")
+        File.write!(ca_path, Base.decode64!(encoded_ca))
+        [ssl: [verify: :verify_peer, cacertfile: ca_path]]
 
-  # write to a temp path
-  ca_path = Path.join(System.tmp_dir!(), "ca.pem")
-  File.write!(ca_path, ca_cert)
+      System.get_env("DB_SSL") in ~w(true 1) ->
+        [ssl: [verify: :verify_none]]
+
+      true ->
+        []
+    end
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :gymrat, Gymrat.Repo,
-    url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2"),
-    # For machines with several cores, consider starting multiple pools of `pool_size`
-    pool_count: 4,
-    socket_options: maybe_ipv6,
-    # ssl: true
-    ssl: [
-      verify: :verify_peer,
-      cacertfile: ca_path
-    ]
+  config :gymrat,
+         Gymrat.Repo,
+         [
+           url: database_url,
+           pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2"),
+           # For machines with several cores, consider starting multiple pools of `pool_size`
+           pool_count: 4,
+           socket_options: maybe_ipv6
+         ] ++ db_ssl_opts
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you

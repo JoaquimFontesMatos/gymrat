@@ -1,6 +1,11 @@
 defmodule GymratWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :gymrat
 
+  # Cheap, dependency-free health endpoint for container orchestrators. Declared
+  # first so `GET /healthz` short-circuits before the session, router, and any
+  # LiveView mount — probes stay fast and don't depend on the database.
+  plug GymratWeb.Plugs.Health
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Run pending Ecto migrations without Mix, via Gymrat.Release.migrate/0.
+# Invoked by the Kubernetes initContainer before the server starts.
+set -eu
+cd -P -- "$(dirname -- "$0")"
+exec ./gymrat eval "Gymrat.Release.migrate()"

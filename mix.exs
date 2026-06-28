@@ -93,6 +93,9 @@ defmodule Gymrat.MixProject do
       ],
       "assets.build": ["compile", "tailwind gymrat", "esbuild gymrat"],
       "assets.deploy": [
+        # compile first so colocated LiveView JS hooks (phoenix-colocated/) exist
+        # before esbuild bundles them.
+        "compile",
         "cmd --cd assets npm install",
         "tailwind gymrat --minify",
         "esbuild gymrat --minify",

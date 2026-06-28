@@ -1,0 +1,6 @@
+#!/bin/sh
+# Start the Phoenix server from the release. PHX_SERVER tells the endpoint
+# (see config/runtime.exs) to actually listen for HTTP requests.
+set -eu
+cd -P -- "$(dirname -- "$0")"
+PHX_SERVER=true exec ./gymrat start
