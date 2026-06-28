@@ -6,6 +6,11 @@ defmodule GymratWeb.Endpoint do
   # LiveView mount — probes stay fast and don't depend on the database.
   plug GymratWeb.Plugs.Health
 
+  # Deprecation notice for the retired Gigalixir host: inert unless the
+  # DEPRECATED_REDIRECT_URL env var is set (so it only fires there, never on
+  # k8s). Placed after Health so orchestrator probes still short-circuit.
+  plug GymratWeb.Plugs.Deprecation
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
