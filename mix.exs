@@ -70,7 +70,7 @@ defmodule Gymrat.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:oban, "~> 2.19"},
-      {:igniter, "~> 0.5", only: [:dev]}
+      {:igniter, "~> 0.8", only: [:dev]}
     ]
   end
 
