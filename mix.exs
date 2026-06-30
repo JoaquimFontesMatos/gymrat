@@ -62,7 +62,7 @@ defmodule Gymrat.MixProject do
       {:swoosh, "~> 1.16"},
       {:gen_smtp, "~> 1.1"},
       {:mail, ">= 0.0.0"},
-      {:req, "~> 0.5"},
+      {:req, "~> 0.6"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
