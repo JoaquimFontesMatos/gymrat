@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Gymrat is a Phoenix 1.8 / LiveView fitness-tracking app (workout plans, exercises, sets, weight tracking, leaderboards). Deployed on Gigalixir.
+Gymrat is a Phoenix 1.8 / LiveView fitness-tracking app (workout plans, exercises, sets, weight tracking, leaderboards). Deployed as a Docker image built and pushed to GHCR (see `.github/workflows/deploy.yml`); rollout is GitOps via ArgoCD in a homelab cluster. No longer deployed on Gigalixir (retired host).
 
 ## Read AGENTS.md first
 
