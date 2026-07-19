@@ -1,11 +1,17 @@
 import Config
 
 # Configure your database
+#
+# Defaults match a plain local Postgres, so an existing `mix phx.server` keeps
+# working with no setup. The env vars let a machine without its own Postgres
+# (e.g. the m6 node, which reaches the CNPG `gymrat_dev` database over a
+# port-forward) point at a different one without editing this file.
 config :gymrat, Gymrat.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "0.0.0.0",
-  database: "gymrat_dev",
+  username: System.get_env("DB_USER", "postgres"),
+  password: System.get_env("DB_PASS", "postgres"),
+  hostname: System.get_env("DB_HOST", "0.0.0.0"),
+  port: String.to_integer(System.get_env("DB_PORT", "5432")),
+  database: System.get_env("DB_NAME", "gymrat_dev"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
