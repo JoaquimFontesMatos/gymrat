@@ -28,12 +28,13 @@ No `just` recipe exists for these yet — run them via `mix` (wrap with `infisic
 ### Context / schema split (important and non-obvious)
 
 Contexts (the public API — query and mutation functions) live under `lib/gymrat/training/`, namespace `Gymrat.Training.*`:
-`Plans`, `Workouts`, `WorkoutExercises`, `Sets`, `UserWeights`.
+`Plans`, `Workouts`, `WorkoutExercises`, `Sets`, `UserWeights`, `Routines`, `RoutineExercises`, `RoutineSets`, `RoutineSetLogs`.
 
 Ecto **schemas** live in separate domain directories with *different* namespaces:
 - `lib/gymrat/plans/` → `Gymrat.Plans.{Plan, UserPlans}`
 - `lib/gymrat/workouts/` → `Gymrat.Workouts.{Workout, WorkoutWeekday, WorkoutExercise, Set}`
 - `lib/gymrat/accounts/` → `Gymrat.Accounts.{User, UserToken, UserWeight, UserNotifier, Scope}`
+- `lib/gymrat/routines/` → `Gymrat.Routines.{Routine, RoutineWeekday, RoutineExercise, RoutineSet, RoutineSetLog}`
 
 So `Gymrat.Training.Plans` (context) operates on `Gymrat.Plans.Plan` (schema) — the names overlap but the modules are distinct. When adding domain logic, put functions in the `Training.*` context and the `schema`/`changeset` in the matching domain-named module. `Gymrat.Accounts` (`lib/gymrat/accounts.ex`) is the one context that follows the standard Phoenix layout.
 
@@ -47,7 +48,7 @@ Uses `phx.gen.auth` with **scopes** (not a bare `current_user`). `@current_scope
 
 ### Web layer
 
-LiveView-only — there is no JSON API (the `:api` scope is commented out). LiveViews are grouped by domain under `lib/gymrat_web/live/<domain>_live/` (e.g. `plan_live/`, `workout_live/`, `exercise_live/`, `set_live/`, `weight_live/`, `scoreboard_live/`, `user_live/`). Shared UI is in `lib/gymrat_web/components/` (`core_components.ex`, `my_components.ex`, `layouts.ex`).
+LiveView-only — there is no JSON API (the `:api` scope is commented out). LiveViews are grouped by domain under `lib/gymrat_web/live/<domain>_live/` (e.g. `plan_live/`, `workout_live/`, `exercise_live/`, `set_live/`, `weight_live/`, `scoreboard_live/`, `user_live/`, `routine_live/`, `routine_exercise_live/`). Shared UI is in `lib/gymrat_web/components/` (`core_components.ex`, `my_components.ex`, `layouts.ex`).
 
 ### External exercise data
 
