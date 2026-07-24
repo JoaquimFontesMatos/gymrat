@@ -1,0 +1,14 @@
+name: Vikunja Link (this repo)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  vikunja-link:
+    # environment: lives on the reusable workflow's own job (vikunja-link.yml),
+    # not here — GitHub's schema doesn't allow `environment:` on a job that
+    # also has `uses:`. secrets: inherit still passes environment secrets
+    # through once the callee's job requests that environment itself.
+    uses: JoaquimFontesMatos/claude-skills/.github/workflows/vikunja-link.yml@main
+    secrets: inherit
