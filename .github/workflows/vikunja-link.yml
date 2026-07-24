@@ -1,0 +1,167 @@
+name: Vikunja Link
+
+# Standalone copy of claude-skills' vikunja-link.yml (Vikunja task #112) —
+# auto-links (and, on merge, auto-closes) any Vikunja task referenced in a
+# PR body. This repo is public, and GitHub does not allow a public repo to
+# call a reusable workflow hosted in a private repo (confirmed live:
+# `uses: JoaquimFontesMatos/claude-skills/.github/workflows/vikunja-link.yml@main`
+# failed here with 0 jobs dispatched, on byte-identical config that worked
+# fine in the private hoard/homelab repos) — so this repo carries its own
+# full copy instead of calling out. If the logic in claude-skills' version
+# ever changes, port the change here by hand too.
+#
+# Needs a `vikunja-link` GitHub Environment on this repo (TS_OAUTH_CLIENT_ID,
+# TS_OAUTH_SECRET, VIKUNJA_API_TOKEN).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    environment: vikunja-link
+    steps:
+      - name: Connect to tailnet (tag:ci-vikunja — reaches only Vikunja)
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci-vikunja
+          # No `ping:`/hostname-based check here — confirmed live that
+          # MagicDNS genuinely does not resolve for this ephemeral CI
+          # identity on this tailnet (both `tailscale ping` and
+          # `tailscale ip` failed identically via the OS resolver stub at
+          # 127.0.0.53, across multiple runs — not a propagation delay).
+          # We connect by IP below instead of chasing DNS further.
+
+      - name: Link / close referenced Vikunja tasks
+        shell: python3 {0}
+        env:
+          # Re-registered 2026-07-23 to fix its Tailscale tag (was tag:k8s,
+          # now tag:ts-vikunja — see wayfinder map Vikunja task #145). That
+          # reset its IP; the hostname briefly came back as vikunja-1 (the
+          # old device's name hadn't freed up yet) but was manually renamed
+          # back to plain vikunja in the Tailscale admin console.
+          VIKUNJA_URL: https://vikunja.tailbdd3d6.ts.net/api/v1
+          # Vikunja's Tailscale proxy device's IP — stable as long as its
+          # node key persists (backed by a StatefulSet PV), found via
+          # `kubectl exec -n tailscale ts-vikunja-<pod> -- tailscale ip`.
+          # If the proxy is ever re-registered, update this constant.
+          VIKUNJA_IP: "100.123.123.0"
+          VIKUNJA_API_TOKEN: ${{ secrets.VIKUNJA_API_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          REPO: ${{ github.repository }}
+        run: |
+          import json
+          import os
+          import re
+          import socket
+          import sys
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          VIKUNJA_URL = os.environ["VIKUNJA_URL"].rstrip("/")
+          VIKUNJA_IP = os.environ.get("VIKUNJA_IP") or ""
+          TOKEN = os.environ["VIKUNJA_API_TOKEN"]
+          PR_BODY = os.environ.get("PR_BODY") or ""
+          PR_NUMBER = os.environ["PR_NUMBER"]
+          PR_URL = os.environ["PR_URL"]
+          REPO = os.environ["REPO"]
+          PR_MERGED = os.environ["PR_MERGED"] == "true"
+
+          MARKER = f"<!-- vikunja-link:{REPO}#{PR_NUMBER} -->"
+
+          # The runner's OS resolver isn't wired to Tailscale's DNS proxy, so
+          # getaddrinfo() can't resolve the MagicDNS hostname even though the
+          # tailnet connection itself works fine. Route just this hostname to
+          # the IP resolved via `tailscale ip` in the previous step; SNI and
+          # the Host header still use the real hostname (untouched, since
+          # they come from the URL string, not from getaddrinfo), so TLS
+          # certificate validation is unaffected.
+          _vikunja_host = urllib.parse.urlparse(VIKUNJA_URL).hostname
+          _orig_getaddrinfo = socket.getaddrinfo
+
+          def _patched_getaddrinfo(host, *args, **kwargs):
+              if host == _vikunja_host and VIKUNJA_IP:
+                  host = VIKUNJA_IP
+              return _orig_getaddrinfo(host, *args, **kwargs)
+
+          socket.getaddrinfo = _patched_getaddrinfo
+
+          # Mirrors GitHub's own closing-keyword list exactly (case-insensitive).
+          CLOSE_KEYWORDS = r"close[sd]?|fix(?:e[sd])?|resolve[sd]?"
+          # A keyword immediately (whitespace/colon only) before a bare "vikunja#123"
+          # or a full task URL triggers close; a bare reference with no keyword
+          # in front links only. Global match supports multiple tasks per PR.
+          REF_PATTERN = re.compile(
+              rf"(?:\b(?P<keyword>{CLOSE_KEYWORDS})\b[:\s]+)?"
+              rf"(?:vikunja#(?P<bare_id>\d+)|https?://\S+?/tasks/(?P<url_id>\d+))",
+              re.IGNORECASE,
+          )
+
+          def api(method, path, body=None):
+              url = f"{VIKUNJA_URL}{path}"
+              data = json.dumps(body).encode() if body is not None else None
+              req = urllib.request.Request(url, data=data, method=method)
+              req.add_header("Authorization", f"Bearer {TOKEN}")
+              req.add_header("Content-Type", "application/json")
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      raw = resp.read()
+                      return json.loads(raw) if raw else None
+              except urllib.error.HTTPError as e:
+                  print(f"::error::{method} {path} failed: {e.code} {e.read().decode()}")
+                  raise
+
+          # task_id -> True if any reference to it used a closing keyword.
+          tasks = {}
+          for m in REF_PATTERN.finditer(PR_BODY):
+              task_id = m.group("bare_id") or m.group("url_id")
+              should_close = m.group("keyword") is not None
+              tasks[task_id] = tasks.get(task_id, False) or should_close
+
+          if not tasks:
+              print("No Vikunja task references found in PR body.")
+              sys.exit(0)
+
+          for task_id, should_close in tasks.items():
+              if should_close:
+                  verb = "Closed by" if PR_MERGED else "Will be closed by"
+              else:
+                  verb = "Linked from"
+
+              comment_html = (
+                  f"{MARKER}\n"
+                  f'<p>{verb} PR <a href="{PR_URL}">{REPO}#{PR_NUMBER}</a>.</p>'
+              )
+
+              comments = api("GET", f"/tasks/{task_id}/comments") or []
+              existing = next(
+                  (c for c in comments if MARKER in c.get("comment", "")), None
+              )
+
+              if existing:
+                  api(
+                      "POST",
+                      f"/tasks/{task_id}/comments/{existing['id']}",
+                      {"comment": comment_html},
+                  )
+                  print(f"Updated comment on Vikunja task {task_id}")
+              else:
+                  api("PUT", f"/tasks/{task_id}/comments", {"comment": comment_html})
+                  print(f"Created comment on Vikunja task {task_id}")
+
+              if should_close and PR_MERGED:
+                  # POST /tasks/{id} is a full replace, not a partial patch —
+                  # confirmed live (2026-07-23): sending only {"done": true}
+                  # silently wiped the task's description. Fetch the current
+                  # task and merge "done" in before writing it back.
+                  current = api("GET", f"/tasks/{task_id}")
+                  current["done"] = True
+                  api("POST", f"/tasks/{task_id}", current)
+                  print(f"Marked Vikunja task {task_id} done")
