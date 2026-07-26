@@ -17,6 +17,7 @@ Local dev runs through the `justfile`, which wraps `mix` with `infisical run --e
 - `just run` — run the app at `localhost:4000` (`mix phx.server`)
 - `just iex` — start an IEx session (`iex -S mix`)
 - `just test` — run tests under `MIX_ENV=test`
+- `just db-migrate-prod` — run production DB migrations (`MIX_ENV=prod`, Infisical `prod` env)
 
 No `just` recipe exists for these yet — run them via `mix` (wrap with `infisical run --env=dev -- …` if they need secrets):
 
