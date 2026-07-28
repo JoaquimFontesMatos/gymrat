@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # Multi-stage build for the `gymrat` mix release. Elixir 1.18.4 on OTP 28.0
-# (the OTP gymrat already runs on under Gigalixir; also avoids an OTP 27.2 TLS
-# bug that rejects Let's Encrypt's chain when fetching hex during the build).
+# (avoids an OTP 27.2 TLS bug that rejects Let's Encrypt's chain when fetching
+# hex during the build).
 # Both stages are Alpine (musl) so the ERTS shipped in the release links against
 # the same libc as the runtime image.
 

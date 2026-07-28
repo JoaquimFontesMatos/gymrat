@@ -6,9 +6,9 @@ import Config
 # which you should run after static files are built and
 # before starting your production server.
 # `force_ssl` must be set at compile time (Phoenix marks it as compile-env), so it
-# lives here rather than in runtime.exs. Behind Gigalixir's and Cloudflare's TLS
-# proxies the request arrives as plain HTTP with `X-Forwarded-Proto: https`, which
-# `rewrite_on` trusts, so there's no redirect loop.
+# lives here rather than in runtime.exs. Behind Cloudflare's TLS proxy the request
+# arrives as plain HTTP with `X-Forwarded-Proto: https`, which `rewrite_on` trusts,
+# so there's no redirect loop.
 config :gymrat, GymratWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json",
   force_ssl: [rewrite_on: [:x_forwarded_proto], hsts: true]
