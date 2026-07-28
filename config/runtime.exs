@@ -24,7 +24,7 @@ end
 
 if config_env() == :prod do
   # Run pending Ecto migrations automatically when the app boots in production.
-  # Set RUN_MIGRATIONS_ON_BOOT=false (in Gigalixir config) to opt out.
+  # Set RUN_MIGRATIONS_ON_BOOT=false to opt out.
   config :gymrat,
     run_migrations_on_boot: System.get_env("RUN_MIGRATIONS_ON_BOOT", "true") not in ~w(false 0)
 
@@ -36,7 +36,7 @@ if config_env() == :prod do
       """
 
   # SSL is resolved from the environment so the same release works against a
-  # managed provider that pins a CA (Aiven/Gigalixir) and against an in-cluster
+  # managed provider that pins a CA (Aiven) and against an in-cluster
   # Postgres that speaks plaintext over the pod network (CNPG on Kubernetes):
   #
   #   * DATABASE_CA set  -> verify_peer against the provided Base64 CA bundle
