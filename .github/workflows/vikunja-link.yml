@@ -1,13 +1,13 @@
 name: Vikunja Link
 
-# Standalone copy of claude-skills' vikunja-link.yml (Vikunja task #112) —
+# Standalone copy of agent-skills' vikunja-link.yml (Vikunja task #112) —
 # auto-links (and, on merge, auto-closes) any Vikunja task referenced in a
 # PR body. This repo is public, and GitHub does not allow a public repo to
 # call a reusable workflow hosted in a private repo (confirmed live:
-# `uses: JoaquimFontesMatos/claude-skills/.github/workflows/vikunja-link.yml@main`
+# `uses: JoaquimFontesMatos/agent-skills/.github/workflows/vikunja-link.yml@main`
 # failed here with 0 jobs dispatched, on byte-identical config that worked
 # fine in the private hoard/homelab repos) — so this repo carries its own
-# full copy instead of calling out. If the logic in claude-skills' version
+# full copy instead of calling out. If the logic in agent-skills' version
 # ever changes, port the change here by hand too.
 #
 # Needs a `vikunja-link` GitHub Environment on this repo (TS_OAUTH_CLIENT_ID,
