@@ -63,8 +63,8 @@ if config_env() == :prod do
          [
            url: database_url,
            pool_size: String.to_integer(System.get_env("POOL_SIZE") || "2"),
-           # For machines with several cores, consider starting multiple pools of `pool_size`
-           pool_count: 4,
+           # Keep the database footprint small on the single-instance homelab DB.
+           pool_count: 1,
            socket_options: maybe_ipv6
          ] ++ db_ssl_opts
 
