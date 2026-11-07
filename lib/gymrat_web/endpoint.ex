@@ -6,6 +6,10 @@ defmodule GymratWeb.Endpoint do
   # LiveView mount — probes stay fast and don't depend on the database.
   plug GymratWeb.Plugs.Health
 
+  # RUM batches are raw JSON or multipart replay data, so handle them before
+  # Plug.Parsers and never forward session cookies to the observability service.
+  plug GymratWeb.Plugs.RumIntake
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.

@@ -22,6 +22,23 @@ Key features include:
 
 Stay tuned for more updates and features to enhance your fitness experience!
 
+### Real user monitoring
+
+Production can send browser performance, errors and session replay to the
+homelab OpenObserve instance. Set `OPENOBSERVE_RUM_TOKEN` to enable it. The
+browser posts only to Gymrat's `/rum/v1/default/rum` and `/rum/v1/default/replay`
+paths; the server forwards those batches to OpenObserve using the RUM-only token.
+The token is never put in the page. This endpoint plug runs before the router
+and parsers so replay's raw multipart payload is preserved; no browser session
+cookies are forwarded.
+
+Replay is sampled at 100% when enabled, with page text and form inputs masked.
+No Gymrat user identity is attached, and automatic click-label tracking is off.
+The SDK is not started on one-time login or email-confirmation links, or pages
+with a query or fragment; replay stops before navigating to such a URL. RUM
+event URLs strip query strings and fragments and redact authentication tokens.
+OpenObserve retains anonymous session, device and performance metadata.
+
 To start your Phoenix server:
 
 * Run `mix setup` to install and setup dependencies
