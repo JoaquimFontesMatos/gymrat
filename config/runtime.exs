@@ -1,5 +1,9 @@
 import Config
 
+# The RUM token is only used server-side by the same-origin intake proxy.
+config :gymrat, :rum_token, System.get_env("OPENOBSERVE_RUM_TOKEN")
+config :gymrat, :rum_upstream, System.get_env("OPENOBSERVE_RUM_UPSTREAM")
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

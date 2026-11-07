@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@openobserve/browser-rum": "0.4.3",
     "chart.js": "^4.5.0"
   }
 }

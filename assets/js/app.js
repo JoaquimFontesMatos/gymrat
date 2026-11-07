@@ -26,6 +26,9 @@ import { hooks as colocatedHooks } from "phoenix-colocated/gymrat";
 import topbar from "../vendor/topbar";
 
 import Hooks from "./hooks";
+import { setupRum } from "./rum";
+
+setupRum();
 
 const csrfToken = document
   .querySelector("meta[name='csrf-token']")
