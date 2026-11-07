@@ -59,6 +59,18 @@ export function setupRum() {
     trackResources: true,
     trackLongTasks: true,
     beforeSend(event) {
+      // The SDK only permits modifying certain fields. Drop errors whose
+      // unmodifiable fields could contain secrets; retain safe error counts.
+      if (event.type === "error" && event.error) {
+        const error = event.error;
+        const safeTypes = ["Error", "TypeError", "RangeError", "ReferenceError", "SyntaxError", "URIError", "EvalError"];
+        if ((error.type && !safeTypes.includes(error.type)) || error.causes?.length || error.component_stack || error.csp) return false;
+        for (const key of ["message", "stack", "handling_stack", "fingerprint"]) {
+          if (typeof error[key] === "string") error[key] = "[redacted]";
+        }
+        if (error.resource?.url) error.resource.url = "[redacted]";
+      }
+      if (event.context) event.context = {};
       if (event.view?.url) {
         const path = new URL(event.view.url, location.origin).pathname;
         if (sensitivePath.test(path)) {
