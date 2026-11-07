@@ -71,6 +71,16 @@ export function setupRum() {
         if (error.resource?.url) error.resource.url = "[redacted]";
       }
       if (event.context) event.context = {};
+      if (event.view?.name) event.view.name = "[redacted]";
+      if (event.long_task?.scripts) {
+        for (const script of event.long_task.scripts) {
+          if (script.source_url) script.source_url = "[redacted]";
+          if (script.invoker) script.invoker = "[redacted]";
+        }
+      }
+      if (event.resource?.graphql?.variables) event.resource.graphql.variables = "[redacted]";
+      if (event.resource?.request?.headers) event.resource.request.headers = {};
+      if (event.resource?.response?.headers) event.resource.response.headers = {};
       if (event.view?.url) {
         const path = new URL(event.view.url, location.origin).pathname;
         if (sensitivePath.test(path)) {
@@ -82,7 +92,14 @@ export function setupRum() {
         event.view.url = sanitizedUrl(event.view.url);
       }
       if (event.view?.referrer) event.view.referrer = sanitizedUrl(event.view.referrer);
-      if (event.resource?.url) event.resource.url = sanitizedUrl(event.resource.url);
+      // Resource paths and queries can embed API keys; keep only the origin.
+      if (event.resource?.url) {
+        try {
+          event.resource.url = `${new URL(event.resource.url, location.origin).origin}/[redacted]`;
+        } catch (_) {
+          event.resource.url = "[redacted]";
+        }
+      }
       return true;
     },
   });
