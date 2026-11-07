@@ -7,6 +7,9 @@
 # General application configuration
 import Config
 
+# Export is enabled explicitly in environments with an OTLP collector.
+config :opentelemetry, traces_exporter: :none
+
 config :gymrat, Oban,
   engine: Oban.Engines.Basic,
   notifier: Oban.Notifiers.Postgres,

@@ -10,6 +10,9 @@ defmodule GymratWeb.Endpoint do
   # Plug.Parsers and never forward session cookies to the observability service.
   plug GymratWeb.Plugs.RumIntake
 
+  # Redact token-bearing URLs before static files, health checks, or routing.
+  plug Gymrat.Tracing
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
