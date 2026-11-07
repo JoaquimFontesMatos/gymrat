@@ -7,6 +7,8 @@ defmodule Gymrat.Application do
 
   @impl true
   def start(_type, _args) do
+    Gymrat.Tracing.setup()
+
     # Run pending migrations before the supervision tree starts so that
     # children which verify the schema (e.g. Oban) boot against an up-to-date
     # database. Enabled in prod via config/runtime.exs.
