@@ -68,7 +68,7 @@ defmodule Gymrat.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.2.0"},
+      {:dns_cluster, "~> 0.3.0"},
       {:opentelemetry, "~> 1.7"},
       {:opentelemetry_exporter, "~> 1.11"},
       {:opentelemetry_phoenix, "~> 2.0"},
