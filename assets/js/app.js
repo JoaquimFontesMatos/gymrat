@@ -30,16 +30,29 @@ import { setupRum } from "./rum";
 
 (() => {
   const setTheme = (theme) => {
+    try {
+      if (theme === "system") {
+        localStorage.removeItem("phx:theme");
+      } else {
+        localStorage.setItem("phx:theme", theme);
+      }
+    } catch (_error) {
+      // The browser may block storage; theme controls should still work.
+    }
     if (theme === "system") {
-      localStorage.removeItem("phx:theme");
       document.documentElement.removeAttribute("data-theme");
     } else {
-      localStorage.setItem("phx:theme", theme);
       document.documentElement.setAttribute("data-theme", theme);
     }
   };
   if (!document.documentElement.hasAttribute("data-theme")) {
-    setTheme(localStorage.getItem("phx:theme") || "system");
+    let theme = "system";
+    try {
+      theme = localStorage.getItem("phx:theme") || theme;
+    } catch (_error) {
+      // Use the system theme when storage is unavailable.
+    }
+    setTheme(theme);
   }
   window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
 
