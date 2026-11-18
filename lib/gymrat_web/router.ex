@@ -9,7 +9,16 @@ defmodule GymratWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {GymratWeb.Layouts, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers
+
+    plug :put_secure_browser_headers,
+         %{
+           "content-security-policy" =>
+             "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; " <>
+               "form-action 'self'; script-src 'self'; worker-src 'self' blob:; " <>
+               "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; " <>
+               "connect-src 'self' ws: wss:"
+         }
+
     plug :fetch_current_scope_for_user
     plug :put_current_path
   end
