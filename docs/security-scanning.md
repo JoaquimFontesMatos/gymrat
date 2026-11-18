@@ -50,7 +50,8 @@ app workflows do not access the cluster or run live web tests.
 - Kubernetes supplies the deployed container's readiness and liveness probes;
   the Dockerfile HEALTHCHECK finding is not an absence of deployment health
   checks. Checkov's base-image warning cannot resolve the versioned `ARG`.
-- Sobelow's traversal finding uses an application-configured cache path, not a
+- Sobelow still flags CSP despite the browser pipeline setting the header.
+  Its traversal finding uses an application-configured cache path, not a
   request path. Its raw SVG findings use bundled static icon data selected from
   an allowlist, not user-provided markup. Review these assumptions if inputs
   change. GitHub Actions are pinned to commits; update pins when upgrading.
