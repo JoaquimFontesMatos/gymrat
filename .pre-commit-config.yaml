@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: security-source-scans
+        name: Security source scans (report only)
+        entry: scripts/security/scan.sh --source
+        language: system
+        pass_filenames: false
+        always_run: true
