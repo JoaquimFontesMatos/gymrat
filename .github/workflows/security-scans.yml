@@ -1,0 +1,56 @@
+name: Security scans
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SECURITY_IMAGE: local/security-scan:${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install pinned scanners
+        run: |
+          scripts/security/install-linux-amd64.sh "$RUNNER_TEMP/security-bin"
+          echo "$RUNNER_TEMP/security-bin" >> "$GITHUB_PATH"
+      - name: Set up Elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
+        with:
+          elixir-version: "1.18.4"
+          otp-version: "27.2"
+      - name: Install Sobelow
+        run: |
+          mix local.hex --force
+          mix escript.install hex sobelow 0.16.0 --force
+          echo "$HOME/.mix/escripts" >> "$GITHUB_PATH"
+      - name: Scan source and configuration
+        env:
+          SECURITY_REPORT_DIR: ${{ runner.temp }}/security-reports
+        run: scripts/security/scan.sh --source
+      - name: Build candidate image without publishing
+        id: build_image
+        if: ${{ !cancelled() }}
+        run: docker build --tag "$SECURITY_IMAGE" .
+      - name: Scan candidate image
+        if: ${{ !cancelled() && steps.build_image.outcome == 'success' }}
+        env:
+          SECURITY_REPORT_DIR: ${{ runner.temp }}/security-reports
+        run: scripts/security/scan.sh --image "$SECURITY_IMAGE"
+      - name: Save reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: security-reports
+          path: ${{ runner.temp }}/security-reports
+          retention-days: 7
+          if-no-files-found: warn

@@ -28,6 +28,37 @@ import topbar from "../vendor/topbar";
 import Hooks from "./hooks";
 import { setupRum } from "./rum";
 
+(() => {
+  const setTheme = (theme) => {
+    try {
+      if (theme === "system") {
+        localStorage.removeItem("phx:theme");
+      } else {
+        localStorage.setItem("phx:theme", theme);
+      }
+    } catch (_error) {
+      // The browser may block storage; theme controls should still work.
+    }
+    if (theme === "system") {
+      document.documentElement.removeAttribute("data-theme");
+    } else {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  };
+  if (!document.documentElement.hasAttribute("data-theme")) {
+    let theme = "system";
+    try {
+      theme = localStorage.getItem("phx:theme") || theme;
+    } catch (_error) {
+      // Use the system theme when storage is unavailable.
+    }
+    setTheme(theme);
+  }
+  window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
+
+  window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+})();
+
 setupRum();
 
 const csrfToken = document

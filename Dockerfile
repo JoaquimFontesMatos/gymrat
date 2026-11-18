@@ -52,7 +52,7 @@ RUN mix release
 # ---- runtime image ----
 FROM ${RUNNER_IMAGE}
 
-RUN apk add --no-cache libstdc++ openssl ncurses-libs libgcc ca-certificates
+RUN apk upgrade --no-cache && apk add --no-cache libstdc++ openssl ncurses-libs libgcc ca-certificates
 
 # musl ships a UTF-8 capable C locale; no glibc locale-gen needed.
 ENV LANG=C.UTF-8 LANGUAGE=C LC_ALL=C.UTF-8
